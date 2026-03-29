@@ -13,3 +13,4 @@ export {useScrollableInput} from './use-scrollable-input.js';
 export {Scrollbar} from './scrollbar.js';
 export {ScrollableBox} from './scrollable-box.js';
 export {useLinkedScroll} from './use-linked-scroll.js';
+export type {LinkedScrollResult, UseLinkedScrollOptions} from './use-linked-scroll.js';

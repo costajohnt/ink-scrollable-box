@@ -145,11 +145,11 @@ export function useScrollable({
 	}, [viewportHeight, updateOffsetFn]);
 
 	const halfPageUp = useCallback(() => {
-		updateOffsetFn(current => current - Math.floor(viewportHeight / 2));
+		updateOffsetFn(current => current - Math.max(1, Math.floor(viewportHeight / 2)));
 	}, [viewportHeight, updateOffsetFn]);
 
 	const halfPageDown = useCallback(() => {
-		updateOffsetFn(current => current + Math.floor(viewportHeight / 2));
+		updateOffsetFn(current => current + Math.max(1, Math.floor(viewportHeight / 2)));
 	}, [viewportHeight, updateOffsetFn]);
 
 	const state = useMemo(() => {

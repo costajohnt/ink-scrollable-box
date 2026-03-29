@@ -276,13 +276,6 @@ render(<App />);
 | `offset` | `number` | -- | Controlled scroll offset (makes the component controlled) |
 | `onOffsetChange` | `(offset: number) => void` | -- | Called when offset changes in controlled mode |
 
-#### Reserved Props
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `mouseWheel` | `boolean` | `false` | Reserved for future mouse wheel support (currently a no-op) |
-| `mouseWheelLines` | `number` | `3` | Lines per mouse wheel tick (currently a no-op) |
-
 ---
 
 ### `useScrollable(options)`

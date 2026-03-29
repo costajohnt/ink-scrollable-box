@@ -6,6 +6,7 @@ import {render} from 'ink-testing-library';
 import {renderToString, Text} from 'ink';
 import {useScrollable} from '../src/use-scrollable.js';
 import type {UseScrollableOptions} from '../src/types.js';
+import {getState} from './helpers.js';
 
 // Use a ref object to access scroll actions from tests
 const scrollRef: {current: ReturnType<typeof useScrollable> | undefined} = {current: undefined};
@@ -29,10 +30,6 @@ function HookTest({options}: {readonly options: UseScrollableOptions}) {
 			})}
 		</Text>
 	);
-}
-
-function getState(instance: ReturnType<typeof render>) {
-	return JSON.parse(instance.lastFrame()!.trim());
 }
 
 describe('useScrollable', () => {

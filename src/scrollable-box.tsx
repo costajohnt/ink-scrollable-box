@@ -16,7 +16,15 @@ import {ScrollContent} from './render-content.js';
 import {Scrollbar} from './scrollbar.js';
 import type {ScrollableBoxProps, ScrollableBoxRef, UseScrollableResult} from './types.js';
 
-function validateProps(height: number, lines?: string[], children?: React.ReactNode) {
+type ValidatePropsInput = {
+	height: number;
+	lines?: string[];
+	children?: React.ReactNode;
+	overscan?: number;
+	reachThreshold?: number;
+};
+
+function validateProps({height, lines, children, overscan, reachThreshold}: ValidatePropsInput) {
 	if (lines !== undefined && children !== undefined) {
 		throw new Error('ScrollableBox: Provide either `lines` or `children`, not both.');
 	}
@@ -27,6 +35,14 @@ function validateProps(height: number, lines?: string[], children?: React.ReactN
 
 	if (lines !== undefined && !Array.isArray(lines)) {
 		throw new Error('ScrollableBox: `lines` must be an array of strings.');
+	}
+
+	if (overscan !== undefined && (overscan < 0 || !Number.isInteger(overscan))) {
+		throw new Error(`ScrollableBox: \`overscan\` must be a non-negative integer, got ${overscan}.`);
+	}
+
+	if (reachThreshold !== undefined && (reachThreshold < 0 || !Number.isFinite(reachThreshold))) {
+		throw new Error(`ScrollableBox: \`reachThreshold\` must be a non-negative number, got ${reachThreshold}.`);
 	}
 }
 
@@ -102,8 +118,47 @@ function buildRefHandle(context: RefHandleContext): ScrollableBoxRef {
 			scroll.halfPageDown();
 		},
 		scrollToIndex(index: number, options?: {align?: 'start' | 'center' | 'end' | 'auto'}) {
-			const target = computeScrollToIndex(index, effectiveHeight, options?.align ?? 'auto', scroll.offset);
-			scroll.scrollTo(target);
+			let targetOffset: number;
+			if (measureChildren) {
+				const pos = this.getItemPosition(index);
+				if (!pos) {
+					return;
+				}
+
+				// Use the item's actual top position for alignment
+				const itemTop = pos.top;
+				const itemHeight = pos.height;
+				const align = options?.align ?? 'auto';
+				switch (align) {
+					case 'auto': {
+						if (itemTop >= scroll.offset && itemTop + itemHeight <= scroll.offset + effectiveHeight) {
+							return; // already visible
+						}
+
+						targetOffset = itemTop < scroll.offset ? itemTop : itemTop + itemHeight - effectiveHeight;
+						break;
+					}
+
+					case 'center': {
+						targetOffset = itemTop - Math.floor((effectiveHeight - itemHeight) / 2);
+						break;
+					}
+
+					case 'end': {
+						targetOffset = itemTop + itemHeight - effectiveHeight;
+						break;
+					}
+
+					case 'start': {
+						targetOffset = itemTop;
+						break;
+					}
+				}
+			} else {
+				targetOffset = computeScrollToIndex(index, effectiveHeight, options?.align ?? 'auto', scroll.offset);
+			}
+
+			scroll.scrollTo(targetOffset);
 		},
 		getScrollState() {
 			return {
@@ -139,8 +194,10 @@ function buildRefHandle(context: RefHandleContext): ScrollableBoxRef {
 		},
 		remeasureItem(index: number): void {
 			if (index >= 0 && index < itemCount) {
-				// Clear cached height — next MeasurableItem effect will re-measure
-				heightsRef.current[index] = 0;
+				// Clear cached height — next MeasurableItem effect will re-measure.
+				// Setting to undefined so `heights[index] ?? 1` falls back to 1.
+				// eslint-disable-next-line @typescript-eslint/no-dynamic-delete, @typescript-eslint/no-array-delete
+				delete heightsRef.current[index];
 			}
 		},
 	};
@@ -238,7 +295,9 @@ function ScrollableBoxRender(
 		scrollbarPosition,
 	} = resolveProps(props);
 
-	validateProps(height, lines, children);
+	validateProps({
+		height, lines, children, overscan, reachThreshold,
+	});
 
 	const childrenArray = useMemo(
 		() => (children ? Children.toArray(children) : []),
@@ -248,6 +307,12 @@ function ScrollableBoxRender(
 	// Measurement state for variable-height children
 	const heightsRef = useRef<number[]>([]);
 	const [measuredHeight, setMeasuredHeight] = useState(childrenArray.length);
+
+	useEffect(() => {
+		if (heightsRef.current.length > childrenArray.length) {
+			heightsRef.current.length = childrenArray.length;
+		}
+	}, [childrenArray.length]);
 
 	useEffect(() => {
 		if (measureChildren && heightsRef.current.length === childrenArray.length) {

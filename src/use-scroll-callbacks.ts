@@ -2,16 +2,7 @@ import {useRef, useEffect} from 'react';
 import type {ScrollState} from './types.js';
 
 type UseScrollCallbacksOptions = {
-	scroll: {
-		offset: number;
-		contentHeight: number;
-		viewportHeight: number;
-		canScrollUp: boolean;
-		canScrollDown: boolean;
-		isAtTop: boolean;
-		isAtBottom: boolean;
-		percentage: number;
-	};
+	scroll: ScrollState;
 	isFocused: boolean;
 	onScroll?: (state: ScrollState) => void;
 	onFocus?: () => void;
@@ -61,7 +52,13 @@ export function useScrollCallbacks({
 		onScrollRef.current = onScroll;
 	}, [onScroll]);
 
+	const isFirstScrollRender = useRef(true);
 	useEffect(() => {
+		if (isFirstScrollRender.current) {
+			isFirstScrollRender.current = false;
+			return;
+		}
+
 		onScrollRef.current?.({
 			offset: scroll.offset,
 			contentHeight: scroll.contentHeight,
@@ -121,18 +118,33 @@ export function useScrollCallbacks({
 		onReachStartRef.current = onReachStart;
 	}, [onReachStart]);
 
+	const hasScrolledRef = useRef(false);
+	useEffect(() => {
+		if (scroll.offset !== 0 || hasScrolledRef.current) {
+			hasScrolledRef.current = true;
+		}
+	}, [scroll.offset]);
+
 	const threshold = reachThreshold ?? 5;
 	const maxOffset = Math.max(0, scroll.contentHeight - scroll.viewportHeight);
 
 	useEffect(() => {
+		if (!hasScrolledRef.current) {
+			return;
+		}
+
 		if (scroll.offset >= maxOffset - threshold && maxOffset > 0) {
 			onReachEndRef.current?.();
 		}
 	}, [scroll.offset, maxOffset, threshold]);
 
 	useEffect(() => {
-		if (scroll.offset <= threshold) {
+		if (!hasScrolledRef.current) {
+			return;
+		}
+
+		if (scroll.offset <= threshold && maxOffset > 0) {
 			onReachStartRef.current?.();
 		}
-	}, [scroll.offset, threshold]);
+	}, [scroll.offset, threshold, maxOffset]);
 }

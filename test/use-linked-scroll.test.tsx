@@ -5,19 +5,9 @@ import {
 import {render} from 'ink-testing-library';
 import {ScrollableBox} from '../src/scrollable-box.js';
 import {useLinkedScroll} from '../src/use-linked-scroll.js';
-
-/** Wait for a microtask/macrotask cycle to flush React state and effects. */
-async function tick() {
-	await new Promise<void>(resolve => {
-		setImmediate(resolve);
-	});
-}
+import {tick, makeLines} from './helpers.js';
 
 const arrowDown = '\u001B[B';
-
-function makeLines(n: number, prefix = 'Line'): string[] {
-	return Array.from({length: n}, (_, i) => `${prefix} ${i + 1}`);
-}
 
 describe('useLinkedScroll', () => {
 	it('two ScrollableBoxes with linked scroll — scrolling one updates the other', async () => {

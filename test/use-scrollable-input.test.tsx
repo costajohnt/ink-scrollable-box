@@ -4,6 +4,7 @@ import {render} from 'ink-testing-library';
 import {Text} from 'ink';
 import {useScrollable} from '../src/use-scrollable.js';
 import {useScrollableInput} from '../src/use-scrollable-input.js';
+import {getState, write, focus} from './helpers.js';
 
 function ScrollableWithInput({
 	contentHeight,
@@ -34,36 +35,6 @@ function ScrollableWithInput({
 			})}
 		</Text>
 	);
-}
-
-function getState(instance: ReturnType<typeof render>) {
-	return JSON.parse(instance.lastFrame()!.trim());
-}
-
-/** Wait for a microtask/macrotask cycle to flush React state and effects. */
-async function tick() {
-	await new Promise<void>(resolve => setImmediate(resolve));
-}
-
-/**
- * Write a key to stdin and wait for React to process it.
- * Two ticks are needed: one for the input event to propagate through
- * Ink's event pipeline, and one for React to commit the state update.
- */
-async function write(stdin: ReturnType<typeof render>['stdin'], data: string) {
-	stdin.write(data);
-	await tick();
-	await tick();
-}
-
-/**
- * Focus the component by pressing Tab, then wait for effects to settle.
- * Ink's useFocus doesn't autoFocus by default, so Tab is needed.
- */
-async function focus(stdin: ReturnType<typeof render>['stdin']) {
-	stdin.write('\t');
-	await tick();
-	await tick();
 }
 
 describe('useScrollableInput', () => {

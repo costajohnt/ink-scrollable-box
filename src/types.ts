@@ -167,25 +167,6 @@ export type ScrollableBoxProps = {
   /** Called when the internal offset would change (for controlled mode) */
   onOffsetChange?: (offset: number) => void;
   /**
-   * Enable mouse wheel scrolling (default: false).
-   *
-   * NOTE: This prop is currently a no-op. Ink v6 does not support mouse events
-   * natively — the Key type has no mouse fields, parse-keypress.ts does not
-   * parse mouse reporting sequences (\x1b[M / \x1b[<), and there is no useMouse
-   * hook. Implementing mouse wheel support would require manually enabling
-   * terminal mouse reporting (sending \x1b[?1000h to stdout) and parsing the
-   * raw escape sequences from stdin, which bypasses Ink's input pipeline and
-   * risks interfering with other Ink components. This will be implemented if/when
-   * Ink adds native mouse event support.
-   */
-  mouseWheel?: boolean;
-  /**
-   * Number of lines to scroll per mouse wheel tick (default: 3).
-   *
-   * NOTE: This prop is currently a no-op. See `mouseWheel` for details.
-   */
-  mouseWheelLines?: number;
-  /**
    * Enable measurement of children's actual heights for accurate scrolling
    * with multi-line children. When true, all children are rendered and measured
    * (O(n) rendering). When false, children are assumed to be 1 line each

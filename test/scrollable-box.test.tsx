@@ -6,39 +6,28 @@ import {render} from 'ink-testing-library';
 import {Text} from 'ink';
 import {ScrollableBox} from '../src/scrollable-box.js';
 import type {ScrollableBoxRef} from '../src/types.js';
-
-/** Wait for a microtask/macrotask cycle to flush React state and effects. */
-async function tick() {
-	await new Promise<void>(resolve => {
-		setImmediate(resolve);
-	});
-}
-
-/**
- * Write a key to stdin and wait for React to process it.
- * Two ticks are needed: one for the input event to propagate through
- * Ink's event pipeline, and one for React to commit the state update.
- */
-async function write(stdin: ReturnType<typeof render>['stdin'], data: string) {
-	stdin.write(data);
-	await tick();
-	await tick();
-}
-
-/**
- * Focus the component by pressing Tab, then wait for effects to settle.
- */
-async function focus(stdin: ReturnType<typeof render>['stdin']) {
-	stdin.write('\t');
-	await tick();
-	await tick();
-}
-
-function makeLines(n: number): string[] {
-	return Array.from({length: n}, (_, i) => `Line ${i + 1}`);
-}
+import {
+	tick, write, focus, makeLines,
+} from './helpers.js';
 
 const arrowDown = '\u001B[B';
+
+/** Helper component that exposes the ref and runs an action via useEffect. */
+function RefTest({lines, action}: {lines: string[]; action: (ref: ScrollableBoxRef) => void}) {
+	const ref = useRef<ScrollableBoxRef>(null);
+	useEffect(() => {
+		if (ref.current) {
+			action(ref.current);
+		}
+	}, [action]);
+	return (
+		<ScrollableBox
+			ref={ref}
+			height={5}
+			lines={lines}
+		/>
+	);
+}
 
 describe('ScrollableBox — lines mode', () => {
 	it('renders visible lines within viewport height', () => {
@@ -153,18 +142,10 @@ describe('ScrollableBox — lines mode', () => {
 			);
 		});
 
-		// The callback fires on initial render via the useEffect
-		expect(onScroll).toHaveBeenCalled();
-
-		const initialCall = scrollStates[0]!;
-		expect(initialCall.offset).toBe(0);
-		expect(initialCall.contentHeight).toBe(20);
-		expect(initialCall.viewportHeight).toBe(5);
-		expect(initialCall.isAtTop).toBe(true);
-		expect(initialCall.canScrollDown).toBe(true);
+		// onScroll should NOT fire on initial mount (Fix 9)
+		expect(onScroll).not.toHaveBeenCalled();
 
 		// Focus + scroll down and check updated state
-		const callCountBefore = scrollStates.length;
 		await React.act(async () => {
 			instance.stdin.write('\t');
 		});
@@ -173,7 +154,7 @@ describe('ScrollableBox — lines mode', () => {
 			instance.stdin.write(arrowDown);
 		});
 
-		expect(scrollStates.length).toBeGreaterThan(callCountBefore);
+		expect(scrollStates.length).toBeGreaterThan(0);
 		const scrolledCall = scrollStates.at(-1)!;
 		expect(scrolledCall.offset).toBe(1);
 		expect(scrolledCall.canScrollUp).toBe(true);
@@ -319,7 +300,7 @@ describe('ScrollableBox — ANSI codes in lines', () => {
 });
 
 describe('ScrollableBox — onScroll callback', () => {
-	it('fires on initial render', async () => {
+	it('does NOT fire on initial render (skip first render)', async () => {
 		const scrollStates: Array<{offset: number}> = [];
 		const lines = makeLines(20);
 
@@ -333,8 +314,7 @@ describe('ScrollableBox — onScroll callback', () => {
 			);
 		});
 
-		expect(scrollStates.length).toBeGreaterThan(0);
-		expect(scrollStates[0]!.offset).toBe(0);
+		expect(scrollStates.length).toBe(0);
 	});
 });
 
@@ -410,23 +390,6 @@ describe('ScrollableBox — enableVimBindings', () => {
 });
 
 describe('ScrollableBox — ref API', () => {
-	// Helper component that exposes the ref and runs an action via useEffect
-	function RefTest({lines, action}: {lines: string[]; action: (ref: ScrollableBoxRef) => void}) {
-		const ref = useRef<ScrollableBoxRef>(null);
-		useEffect(() => {
-			if (ref.current) {
-				action(ref.current);
-			}
-		}, [action]);
-		return (
-			<ScrollableBox
-				ref={ref}
-				height={5}
-				lines={lines}
-			/>
-		);
-	}
-
 	it('scrollTo(n) via ref changes visible content', async () => {
 		const lines = makeLines(20);
 		let instance!: ReturnType<typeof render>;
@@ -928,22 +891,6 @@ describe('ScrollableBox — controlled mode', () => {
 });
 
 describe('ScrollableBox — scrollToIndex auto alignment', () => {
-	function RefTest({lines, action}: {lines: string[]; action: (ref: ScrollableBoxRef) => void}) {
-		const ref = useRef<ScrollableBoxRef>(null);
-		useEffect(() => {
-			if (ref.current) {
-				action(ref.current);
-			}
-		}, [action]);
-		return (
-			<ScrollableBox
-				ref={ref}
-				height={5}
-				lines={lines}
-			/>
-		);
-	}
-
 	it('auto — item already visible, offset does not change', async () => {
 		const lines = makeLines(20);
 		let instance!: ReturnType<typeof render>;
@@ -1085,22 +1032,6 @@ describe('ScrollableBox — debug prop', () => {
 });
 
 describe('ScrollableBox — ref API — per-item tracking', () => {
-	function RefTest({lines, action}: {lines: string[]; action: (ref: ScrollableBoxRef) => void}) {
-		const ref = useRef<ScrollableBoxRef>(null);
-		useEffect(() => {
-			if (ref.current) {
-				action(ref.current);
-			}
-		}, [action]);
-		return (
-			<ScrollableBox
-				ref={ref}
-				height={5}
-				lines={lines}
-			/>
-		);
-	}
-
 	it('getItemHeight returns 1 for each item in non-measure mode', async () => {
 		const lines = makeLines(5);
 		let capturedHeights: number[] = [];
@@ -1296,27 +1227,57 @@ describe('ScrollableBox — onReachEnd / onReachStart', () => {
 		instance.unmount();
 	});
 
-	it('onReachStart fires when near top (offset <= threshold)', async () => {
+	it('onReachStart fires when scrolling back near top (offset <= threshold)', async () => {
 		const onReachStart = vi.fn();
 		const lines = makeLines(20);
 
-		let instance!: ReturnType<typeof render>;
-
-		await React.act(async () => {
-			instance = render(
+		function ReachStartTest() {
+			const [currentOffset, setCurrentOffset] = useState(0);
+			return (
 				<ScrollableBox
 					height={5}
 					lines={lines}
-					offset={0}
+					offset={currentOffset}
+					onOffsetChange={setCurrentOffset}
 					onReachStart={onReachStart}
 					reachThreshold={3}
 					showScrollbar={false}
 					showIndicators={false}
-				/>,
+				/>
 			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(<ReachStartTest />);
 		});
 
-		// At offset 0, which is <= threshold 3, onReachStart should fire
+		// Should NOT fire on mount
+		expect(onReachStart).not.toHaveBeenCalled();
+
+		// Focus and scroll down past threshold
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		for (let i = 0; i < 5; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		onReachStart.mockClear();
+
+		// Now scroll back to top — onReachStart should fire when offset <= threshold
+		for (let i = 0; i < 5; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write('\u001B[A'); // arrow up
+			});
+		}
+
 		expect(onReachStart).toHaveBeenCalled();
 		instance.unmount();
 	});

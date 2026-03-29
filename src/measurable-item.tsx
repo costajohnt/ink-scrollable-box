@@ -14,8 +14,13 @@ export function MeasurableItem({children, onMeasure}: MeasurableItemProps) {
 	// so the extra calls are inexpensive.
 	useEffect(() => {
 		if (ref.current) {
-			const {height} = measureElement(ref.current);
-			onMeasure(height);
+			try {
+				const {height} = measureElement(ref.current);
+				onMeasure(height);
+			} catch {
+				// Measurement failed — fall back to default height
+				onMeasure(1);
+			}
 		}
 	});
 
