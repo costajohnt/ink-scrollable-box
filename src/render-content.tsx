@@ -1,9 +1,10 @@
+import type {ReactNode} from 'react';
 import {Box, Text} from 'ink';
 import {MeasurableItem} from './measurable-item.js';
 
 type ScrollContentProps = {
 	lines?: string[];
-	childrenArray: React.ReactNode[];
+	childrenArray: ReactNode[];
 	measureChildren: boolean;
 	scrollOffset: number;
 	effectiveHeight: number;
@@ -42,8 +43,8 @@ export function ScrollContent({
 	const visibleContent = lines
 		? lines
 			.slice(scrollOffset, scrollOffset + effectiveHeight)
-			.map((line, _i, _array, key = `line-${scrollOffset + _i}`) => (
-				<Text key={key}>{line}</Text>
+			.map((line, i) => (
+				<Text key={`line-${scrollOffset + i}`}>{line}</Text>
 			))
 		: childrenArray.slice(scrollOffset, scrollOffset + effectiveHeight);
 
@@ -57,8 +58,8 @@ export function ScrollContent({
 		? (
 			<Box height={0} overflowY='hidden' flexDirection='column'>
 				{lines
-					? lines.slice(overscanAboveStart, scrollOffset).map((line, _i, _array, key = `os-above-${overscanAboveStart + _i}`) => (
-						<Text key={key}>{line}</Text>
+					? lines.slice(overscanAboveStart, scrollOffset).map((line, i) => (
+						<Text key={`os-above-${overscanAboveStart + i}`}>{line}</Text>
 					))
 					: childrenArray.slice(overscanAboveStart, scrollOffset)}
 			</Box>
@@ -69,8 +70,8 @@ export function ScrollContent({
 		? (
 			<Box height={0} overflowY='hidden' flexDirection='column'>
 				{lines
-					? lines.slice(scrollOffset + effectiveHeight, overscanBelowEnd).map((line, _i, _array, key = `os-below-${scrollOffset + effectiveHeight + _i}`) => (
-						<Text key={key}>{line}</Text>
+					? lines.slice(scrollOffset + effectiveHeight, overscanBelowEnd).map((line, i) => (
+						<Text key={`os-below-${scrollOffset + effectiveHeight + i}`}>{line}</Text>
 					))
 					: childrenArray.slice(scrollOffset + effectiveHeight, overscanBelowEnd)}
 			</Box>
