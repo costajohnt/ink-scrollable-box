@@ -1,2 +1,8 @@
-// Barrel exports — populated as components are built
-export {};
+export type {
+  ScrollState,
+  ScrollActions,
+  UseScrollableOptions,
+  UseScrollableResult,
+  ScrollbarProps,
+  ScrollableBoxProps,
+} from './types.js';
