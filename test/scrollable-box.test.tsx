@@ -3,6 +3,7 @@ import {
 	describe, it, expect, vi,
 } from 'vitest';
 import {render} from 'ink-testing-library';
+import {Text} from 'ink';
 import {ScrollableBox} from '../src/scrollable-box.js';
 
 /** Wait for a microtask/macrotask cycle to flush React state and effects. */
@@ -164,6 +165,117 @@ describe('ScrollableBox — lines mode', () => {
 		expect(scrolledCall.canScrollUp).toBe(true);
 		expect(scrolledCall.isAtTop).toBe(false);
 
+		instance.unmount();
+	});
+});
+
+describe('ScrollableBox — children mode', () => {
+	it('renders visible children', async () => {
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={3}>
+				<Text>Item 1</Text>
+				<Text>Item 2</Text>
+				<Text>Item 3</Text>
+				<Text>Item 4</Text>
+				<Text>Item 5</Text>
+			</ScrollableBox>,
+		);
+		const frame = lastFrame()!;
+		expect(frame).toContain('Item 1');
+		expect(frame).toContain('Item 3');
+		expect(frame).not.toContain('Item 4');
+		unmount();
+	});
+
+	it('scrolls children on keyboard input', async () => {
+		const instance = render(
+			<ScrollableBox height={3}>
+				<Text>Item 1</Text>
+				<Text>Item 2</Text>
+				<Text>Item 3</Text>
+				<Text>Item 4</Text>
+				<Text>Item 5</Text>
+			</ScrollableBox>,
+		);
+		await focus(instance.stdin);
+		await write(instance.stdin, arrowDown);
+		const frame = instance.lastFrame()!;
+		expect(frame).toContain('Item 2');
+		expect(frame).not.toContain('Item 1');
+		instance.unmount();
+	});
+});
+
+describe('ScrollableBox — prop validation', () => {
+	// React catches errors thrown during render internally, so we call the
+	// component function directly to bypass the reconciler and observe the throw.
+	it('throws when both lines and children are provided', () => {
+		expect(() => {
+			ScrollableBox({height: 5, lines: ['test'], children: <Text>child</Text>});
+		}).toThrow('Provide either `lines` or `children`, not both');
+	});
+
+	it('throws for height <= 0', () => {
+		expect(() => {
+			ScrollableBox({height: 0, lines: []});
+		}).toThrow('`height` must be a positive integer');
+	});
+
+	it('throws for non-integer height (5.5)', () => {
+		expect(() => {
+			ScrollableBox({height: 5.5, lines: []});
+		}).toThrow('`height` must be a positive integer');
+	});
+
+	it('throws for negative height (-1)', () => {
+		expect(() => {
+			ScrollableBox({height: -1, lines: []});
+		}).toThrow('`height` must be a positive integer');
+	});
+});
+
+describe('ScrollableBox — border', () => {
+	it('renders border when enabled', () => {
+		const lines = makeLines(3);
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={5} lines={lines} border/>,
+		);
+		const frame = lastFrame()!;
+		expect(frame).toContain('╭');
+		unmount();
+	});
+
+	it('effective viewport is reduced by 2 when border is enabled', () => {
+		const lines = makeLines(20);
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={7} lines={lines} border/>,
+		);
+		const frame = lastFrame()!;
+		// effectiveHeight = 7 - 2 = 5; lines 1-5 visible, line 6 not
+		expect(frame).toContain('Line 1');
+		expect(frame).toContain('Line 5');
+		expect(frame).not.toContain('Line 6');
+		unmount();
+	});
+});
+
+describe('ScrollableBox — followOutput', () => {
+	it('auto-scrolls when new lines are added while at bottom', async () => {
+		const lines = makeLines(10);
+		const instance = render(
+			<ScrollableBox height={5} lines={lines} followOutput/>,
+		);
+		// Go to bottom
+		await focus(instance.stdin);
+		await write(instance.stdin, 'G');
+		expect(instance.lastFrame()!).toContain('Line 10');
+
+		// Add more lines — followOutput should keep us at the bottom
+		const moreLines = makeLines(15);
+		instance.rerender(<ScrollableBox height={5} lines={moreLines} followOutput/>);
+		await tick();
+		await tick();
+		expect(instance.lastFrame()!).toContain('Line 15');
 		instance.unmount();
 	});
 });
