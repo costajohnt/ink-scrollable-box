@@ -50,6 +50,9 @@ function ScrollableBoxRender({
 	enableVimBindings = true,
 	onFocus,
 	onBlur,
+	overscan,
+	offset,
+	onOffsetChange,
 }: ScrollableBoxProps, ref: React.ForwardedRef<ScrollableBoxRef>) {
 	validateProps(height, lines, children);
 
@@ -68,6 +71,8 @@ function ScrollableBoxRender({
 		viewportHeight: effectiveHeight,
 		scrollStep,
 		followOutput,
+		controlledOffset: offset,
+		onOffsetChange,
 	});
 
 	useImperativeHandle(ref, () => ({
@@ -193,6 +198,37 @@ function ScrollableBoxRender({
 			))
 		: childrenArray.slice(scroll.offset, scroll.offset + effectiveHeight);
 
+	// Overscan: pre-render extra items above and below the viewport in
+	// zero-height hidden boxes so they exist in React's VDOM for faster
+	// reconciliation when they scroll into view.
+	const overscanValue = overscan ?? 0;
+	const overscanAboveStart = Math.max(0, scroll.offset - overscanValue);
+	const overscanBelowEnd = Math.min(contentHeight, scroll.offset + effectiveHeight + overscanValue);
+
+	const overscanAbove = overscanValue > 0 && overscanAboveStart < scroll.offset
+		? (
+			<Box height={0} overflowY='hidden' flexDirection='column'>
+				{lines
+					? lines.slice(overscanAboveStart, scroll.offset).map((line, _i, _array, key = `os-above-${overscanAboveStart + _i}`) => (
+						<Text key={key}>{line}</Text>
+					))
+					: childrenArray.slice(overscanAboveStart, scroll.offset)}
+			</Box>
+		)
+		: null;
+
+	const overscanBelow = overscanValue > 0 && scroll.offset + effectiveHeight < overscanBelowEnd
+		? (
+			<Box height={0} overflowY='hidden' flexDirection='column'>
+				{lines
+					? lines.slice(scroll.offset + effectiveHeight, overscanBelowEnd).map((line, _i, _array, key = `os-below-${scroll.offset + effectiveHeight + _i}`) => (
+						<Text key={key}>{line}</Text>
+					))
+					: childrenArray.slice(scroll.offset + effectiveHeight, overscanBelowEnd)}
+			</Box>
+		)
+		: null;
+
 	const showBar = showScrollbar && contentHeight > effectiveHeight;
 	const hasOverflow = contentHeight > effectiveHeight;
 
@@ -212,7 +248,9 @@ function ScrollableBoxRender({
 				overflowY='hidden'
 			>
 				<Box flexDirection='column' flexGrow={1}>
+					{overscanAbove}
 					{visibleContent}
+					{overscanBelow}
 				</Box>
 				{showBar
 					? (

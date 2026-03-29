@@ -2,6 +2,8 @@ import {
 	useState,
 	useMemo,
 	useCallback,
+	useEffect,
+	useRef,
 } from 'react';
 import type {UseScrollableOptions, UseScrollableResult} from './types.js';
 
@@ -15,6 +17,8 @@ export function useScrollable({
 	scrollStep = 1,
 	followOutput = false,
 	initialOffset = 0,
+	controlledOffset,
+	onOffsetChange,
 }: UseScrollableOptions): UseScrollableResult {
 	if (scrollStep <= 0 || !Number.isFinite(scrollStep)) {
 		throw new Error(
@@ -29,6 +33,14 @@ export function useScrollable({
 	// information from previous renders without using refs during render)
 	const [previousContentHeight, setPreviousContentHeight] = useState(contentHeight);
 	const [previousMaxOffset, setPreviousMaxOffset] = useState(maxOffset);
+
+	const isControlled = controlledOffset !== undefined;
+
+	// Keep a ref to onOffsetChange to avoid stale closures
+	const onOffsetChangeRef = useRef(onOffsetChange);
+	useEffect(() => {
+		onOffsetChangeRef.current = onOffsetChange;
+	}, [onOffsetChange]);
 
 	// Synchronously adjust offset during render when props change
 	let adjustedOffset = offset;
@@ -52,44 +64,86 @@ export function useScrollable({
 		setPreviousMaxOffset(maxOffset);
 	}
 
+	// In controlled mode, the external offset takes precedence.
+	// Also sync internal state so updater functions have the right baseline.
+	if (isControlled) {
+		const clamped = clamp(controlledOffset, 0, maxOffset);
+		adjustedOffset = clamped;
+
+		if (offset !== clamped) {
+			setOffset(clamped);
+		}
+	}
+
+	// Helper: update offset, calling onOffsetChange in controlled mode
+	const updateOffset = useCallback(
+		(newOffset: number) => {
+			const clamped = clamp(newOffset, 0, maxOffset);
+			if (isControlled) {
+				onOffsetChangeRef.current?.(clamped);
+			} else {
+				setOffset(clamped);
+			}
+		},
+		[maxOffset, isControlled],
+	);
+
+	// Helper: update offset with a function of current offset
+	const updateOffsetFn = useCallback(
+		(fn: (current: number) => number) => {
+			if (isControlled) {
+				// In controlled mode we compute from adjustedOffset (the controlled value)
+				// We read from internal state since it's synced to controlledOffset
+				setOffset(current => {
+					const next = clamp(fn(current), 0, maxOffset);
+					onOffsetChangeRef.current?.(next);
+					return current; // Don't actually update internal state in controlled mode
+				});
+			} else {
+				setOffset(current => clamp(fn(current), 0, maxOffset));
+			}
+		},
+		[maxOffset, isControlled],
+	);
+
 	const scrollUp = useCallback(() => {
-		setOffset(current => clamp(current - scrollStep, 0, maxOffset));
-	}, [scrollStep, maxOffset]);
+		updateOffsetFn(current => current - scrollStep);
+	}, [scrollStep, updateOffsetFn]);
 
 	const scrollDown = useCallback(() => {
-		setOffset(current => clamp(current + scrollStep, 0, maxOffset));
-	}, [scrollStep, maxOffset]);
+		updateOffsetFn(current => current + scrollStep);
+	}, [scrollStep, updateOffsetFn]);
 
 	const scrollTo = useCallback(
 		(target: number) => {
-			setOffset(clamp(target, 0, maxOffset));
+			updateOffset(target);
 		},
-		[maxOffset],
+		[updateOffset],
 	);
 
 	const scrollToTop = useCallback(() => {
-		setOffset(0);
-	}, []);
+		updateOffset(0);
+	}, [updateOffset]);
 
 	const scrollToBottom = useCallback(() => {
-		setOffset(maxOffset);
-	}, [maxOffset]);
+		updateOffset(maxOffset);
+	}, [updateOffset, maxOffset]);
 
 	const pageUp = useCallback(() => {
-		setOffset(current => clamp(current - viewportHeight, 0, maxOffset));
-	}, [viewportHeight, maxOffset]);
+		updateOffsetFn(current => current - viewportHeight);
+	}, [viewportHeight, updateOffsetFn]);
 
 	const pageDown = useCallback(() => {
-		setOffset(current => clamp(current + viewportHeight, 0, maxOffset));
-	}, [viewportHeight, maxOffset]);
+		updateOffsetFn(current => current + viewportHeight);
+	}, [viewportHeight, updateOffsetFn]);
 
 	const halfPageUp = useCallback(() => {
-		setOffset(current => clamp(current - Math.floor(viewportHeight / 2), 0, maxOffset));
-	}, [viewportHeight, maxOffset]);
+		updateOffsetFn(current => current - Math.floor(viewportHeight / 2));
+	}, [viewportHeight, updateOffsetFn]);
 
 	const halfPageDown = useCallback(() => {
-		setOffset(current => clamp(current + Math.floor(viewportHeight / 2), 0, maxOffset));
-	}, [viewportHeight, maxOffset]);
+		updateOffsetFn(current => current + Math.floor(viewportHeight / 2));
+	}, [viewportHeight, updateOffsetFn]);
 
 	const state = useMemo(() => {
 		const canScrollUp = adjustedOffset > 0;

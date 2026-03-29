@@ -1,4 +1,4 @@
-import React, {useRef, useEffect} from 'react';
+import React, {useRef, useEffect, useState} from 'react';
 import {
 	describe, it, expect, vi,
 } from 'vitest';
@@ -576,6 +576,157 @@ describe('ScrollableBox — ref API', () => {
 		expect(scrollState.canScrollDown).toBe(true);
 		expect(scrollState.isAtTop).toBe(false);
 		expect(scrollState.isAtBottom).toBe(false);
+		instance.unmount();
+	});
+});
+
+describe('ScrollableBox — overscan', () => {
+	it('overscan={2} at top — visible content starts at Line 1', () => {
+		const lines = makeLines(20);
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={5} lines={lines} overscan={2} showScrollbar={false} showIndicators={false} />,
+		);
+		const frame = lastFrame()!;
+		// At offset 0 with overscan=2, renderStart=0, so visible content still starts at Line 1
+		expect(frame).toContain('Line 1');
+		expect(frame).toContain('Line 5');
+		// Line 6/7 are rendered as overscan below but clipped by overflow:hidden
+		unmount();
+	});
+
+	it('after scrolling down 5 with overscan={2} — visible content starts at Line 6', async () => {
+		const lines = makeLines(20);
+		const instance = render(
+			<ScrollableBox height={5} lines={lines} overscan={2} showScrollbar={false} showIndicators={false} />,
+		);
+		await focus(instance.stdin);
+		// Scroll down 5 times
+		for (let i = 0; i < 5; i++) {
+			// eslint-disable-next-line no-await-in-loop
+			await write(instance.stdin, arrowDown);
+		}
+
+		const frame = instance.lastFrame()!;
+		// At offset 5, viewport shows lines 6-10
+		expect(frame).toContain('Line 6');
+		expect(frame).toContain('Line 10');
+		instance.unmount();
+	});
+
+	it('overscan does not break with content shorter than viewport', () => {
+		const lines = makeLines(3);
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={5} lines={lines} overscan={5} showScrollbar={false} showIndicators={false} />,
+		);
+		const frame = lastFrame()!;
+		expect(frame).toContain('Line 1');
+		expect(frame).toContain('Line 3');
+		unmount();
+	});
+});
+
+describe('ScrollableBox — controlled mode', () => {
+	it('setting offset={10} positions viewport at offset 10', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<ScrollableBox height={5} lines={lines} offset={10} showScrollbar={false} showIndicators={false} />,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// offset=10 means lines 11-15 visible
+		expect(frame).toContain('Line 11');
+		expect(frame).toContain('Line 15');
+		expect(frame).not.toContain('Line 10');
+		instance.unmount();
+	});
+
+	it('changing offset prop scrolls to new position', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<ScrollableBox height={5} lines={lines} offset={0} showScrollbar={false} showIndicators={false} />,
+			);
+		});
+
+		let frame = instance.lastFrame()!;
+		expect(frame).toContain('Line 1');
+
+		await React.act(async () => {
+			instance.rerender(
+				<ScrollableBox height={5} lines={lines} offset={10} showScrollbar={false} showIndicators={false} />,
+			);
+		});
+
+		frame = instance.lastFrame()!;
+		expect(frame).toContain('Line 11');
+		expect(frame).toContain('Line 15');
+		expect(frame).not.toContain('Line 10');
+		instance.unmount();
+	});
+
+	it('onOffsetChange fires when keyboard scrolling occurs in controlled mode', async () => {
+		const lines = makeLines(20);
+		const onOffsetChange = vi.fn();
+
+		function ControlledTest() {
+			const [currentOffset, setCurrentOffset] = useState(0);
+			return (
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					offset={currentOffset}
+					onOffsetChange={newOffset => {
+						onOffsetChange(newOffset);
+						setCurrentOffset(newOffset);
+					}}
+					showScrollbar={false}
+					showIndicators={false}
+				/>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(<ControlledTest />);
+		});
+
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		await React.act(async () => {
+			instance.stdin.write(arrowDown);
+		});
+
+		expect(onOffsetChange).toHaveBeenCalledWith(1);
+
+		// Verify the viewport moved
+		const frame = instance.lastFrame()!;
+		expect(frame).toContain('Line 2');
+		instance.unmount();
+	});
+
+	it('offset prop clamps to valid range', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<ScrollableBox height={5} lines={lines} offset={100} showScrollbar={false} showIndicators={false} />,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// maxOffset = 20 - 5 = 15, so clamped to 15 => lines 16-20 visible
+		expect(frame).toContain('Line 16');
+		expect(frame).toContain('Line 20');
 		instance.unmount();
 	});
 });

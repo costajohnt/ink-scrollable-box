@@ -49,6 +49,10 @@ export type UseScrollableOptions = {
   followOutput?: boolean;
   /** Starting scroll position (default: 0) */
   initialOffset?: number;
+  /** External controlled offset. When provided, overrides internal state. */
+  controlledOffset?: number;
+  /** Called when the internal offset would change (for controlled mode) */
+  onOffsetChange?: (offset: number) => void;
 };
 
 export type UseScrollableResult = ScrollState & ScrollActions;
@@ -142,4 +146,10 @@ export type ScrollableBoxProps = {
   onFocus?: () => void;
   /** Called when the component loses focus */
   onBlur?: () => void;
+  /** Number of extra items to render above and below the viewport (default: 0) */
+  overscan?: number;
+  /** Controlled scroll offset. When provided, the component becomes controlled. */
+  offset?: number;
+  /** Called when the internal offset would change (for controlled mode) */
+  onOffsetChange?: (offset: number) => void;
 };

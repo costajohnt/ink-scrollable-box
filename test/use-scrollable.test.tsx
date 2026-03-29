@@ -1,5 +1,7 @@
 import React from 'react';
-import {describe, it, expect} from 'vitest';
+import {
+	describe, it, expect, vi,
+} from 'vitest';
 import {render} from 'ink-testing-library';
 import {renderToString, Text} from 'ink';
 import {useScrollable} from '../src/use-scrollable.js';
@@ -595,6 +597,133 @@ describe('useScrollable', () => {
 			// Offset 10 is still valid (maxOffset = 15), stays at 10
 			expect(state.offset).toBe(10);
 			expect(state.isAtBottom).toBe(false);
+			instance.unmount();
+		});
+	});
+
+	describe('controlled mode', () => {
+		it('uses controlledOffset instead of internal state', () => {
+			const instance = render(
+				<HookTest
+					options={{contentHeight: 20, viewportHeight: 10, controlledOffset: 5}}
+				/>,
+			);
+			const state = getState(instance);
+			expect(state.offset).toBe(5);
+			expect(state.canScrollUp).toBe(true);
+			expect(state.canScrollDown).toBe(true);
+			instance.unmount();
+		});
+
+		it('clamps controlledOffset to valid range', () => {
+			const instance = render(
+				<HookTest
+					options={{contentHeight: 20, viewportHeight: 10, controlledOffset: 100}}
+				/>,
+			);
+			const state = getState(instance);
+			expect(state.offset).toBe(10); // maxOffset = 20 - 10 = 10
+			expect(state.isAtBottom).toBe(true);
+			instance.unmount();
+		});
+
+		it('updates when controlledOffset changes', () => {
+			const instance = render(
+				<HookTest
+					options={{contentHeight: 20, viewportHeight: 10, controlledOffset: 0}}
+				/>,
+			);
+			let state = getState(instance);
+			expect(state.offset).toBe(0);
+
+			React.act(() => {
+				instance.rerender(
+					<HookTest
+						options={{contentHeight: 20, viewportHeight: 10, controlledOffset: 7}}
+					/>,
+				);
+			});
+			state = getState(instance);
+			expect(state.offset).toBe(7);
+			instance.unmount();
+		});
+
+		it('fires onOffsetChange on scrollDown in controlled mode', () => {
+			const onOffsetChange = vi.fn();
+			const instance = render(
+				<HookTest
+					options={{
+						contentHeight: 20,
+						viewportHeight: 10,
+						controlledOffset: 0,
+						onOffsetChange,
+					}}
+				/>,
+			);
+			React.act(() => {
+				scrollRef.current!.scrollDown();
+			});
+			expect(onOffsetChange).toHaveBeenCalledWith(1);
+			// In controlled mode, displayed offset stays at 0 since parent didn't update
+			const state = getState(instance);
+			expect(state.offset).toBe(0);
+			instance.unmount();
+		});
+
+		it('fires onOffsetChange on scrollTo in controlled mode', () => {
+			const onOffsetChange = vi.fn();
+			const instance = render(
+				<HookTest
+					options={{
+						contentHeight: 20,
+						viewportHeight: 10,
+						controlledOffset: 0,
+						onOffsetChange,
+					}}
+				/>,
+			);
+			React.act(() => {
+				scrollRef.current!.scrollTo(5);
+			});
+			expect(onOffsetChange).toHaveBeenCalledWith(5);
+			instance.unmount();
+		});
+
+		it('fires onOffsetChange on scrollToBottom in controlled mode', () => {
+			const onOffsetChange = vi.fn();
+			const instance = render(
+				<HookTest
+					options={{
+						contentHeight: 20,
+						viewportHeight: 10,
+						controlledOffset: 0,
+						onOffsetChange,
+					}}
+				/>,
+			);
+			React.act(() => {
+				scrollRef.current!.scrollToBottom();
+			});
+			expect(onOffsetChange).toHaveBeenCalledWith(10);
+			instance.unmount();
+		});
+
+		it('fires onOffsetChange on scrollToTop in controlled mode', () => {
+			const onOffsetChange = vi.fn();
+			const instance = render(
+				<HookTest
+					options={{
+						contentHeight: 20,
+						viewportHeight: 10,
+						controlledOffset: 5,
+						onOffsetChange,
+					}}
+				/>,
+			);
+			React.act(() => {
+				scrollRef.current!.scrollToTop();
+			});
+			expect(onOffsetChange).toHaveBeenCalledWith(0);
 			instance.unmount();
 		});
 	});
