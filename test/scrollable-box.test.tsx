@@ -1192,6 +1192,169 @@ describe('ScrollableBox — ref API — per-item tracking', () => {
 	});
 });
 
+describe('ScrollableBox — onReachEnd / onReachStart', () => {
+	it('onReachEnd fires when scrolling near bottom', async () => {
+		const onReachEnd = vi.fn();
+		const lines = makeLines(20);
+
+		function ReachEndTest() {
+			const [currentOffset, setCurrentOffset] = useState(0);
+			return (
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					offset={currentOffset}
+					onOffsetChange={setCurrentOffset}
+					onReachEnd={onReachEnd}
+					reachThreshold={3}
+					showScrollbar={false}
+					showIndicators={false}
+				/>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(<ReachEndTest />);
+		});
+
+		// maxOffset = 20 - 5 = 15, threshold = 3, so onReachEnd fires when offset >= 12
+		// Scroll to offset 12 by pressing arrow down 12 times
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		onReachEnd.mockClear();
+
+		for (let i = 0; i < 12; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		expect(onReachEnd).toHaveBeenCalled();
+		instance.unmount();
+	});
+
+	it('onReachEnd does not fire when far from bottom', async () => {
+		const onReachEnd = vi.fn();
+		const lines = makeLines(20);
+
+		function FarFromBottomTest() {
+			const [currentOffset, setCurrentOffset] = useState(0);
+			return (
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					offset={currentOffset}
+					onOffsetChange={setCurrentOffset}
+					onReachEnd={onReachEnd}
+					reachThreshold={3}
+					showScrollbar={false}
+					showIndicators={false}
+				/>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(<FarFromBottomTest />);
+		});
+
+		// Focus the component
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		onReachEnd.mockClear();
+
+		// Scroll down only 2 lines — should be at offset 2, far from bottom (maxOffset=15, threshold=3)
+		for (let i = 0; i < 2; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		expect(onReachEnd).not.toHaveBeenCalled();
+		instance.unmount();
+	});
+
+	it('onReachStart fires when near top (offset <= threshold)', async () => {
+		const onReachStart = vi.fn();
+		const lines = makeLines(20);
+
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					offset={0}
+					onReachStart={onReachStart}
+					reachThreshold={3}
+					showScrollbar={false}
+					showIndicators={false}
+				/>,
+			);
+		});
+
+		// At offset 0, which is <= threshold 3, onReachStart should fire
+		expect(onReachStart).toHaveBeenCalled();
+		instance.unmount();
+	});
+
+	it('custom reachThreshold works', async () => {
+		const onReachEnd = vi.fn();
+		const lines = makeLines(20);
+
+		function CustomThresholdTest() {
+			const [currentOffset, setCurrentOffset] = useState(0);
+			return (
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					offset={currentOffset}
+					onOffsetChange={setCurrentOffset}
+					onReachEnd={onReachEnd}
+					reachThreshold={10}
+					showScrollbar={false}
+					showIndicators={false}
+				/>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(<CustomThresholdTest />);
+		});
+
+		// Focus the component
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		onReachEnd.mockClear();
+
+		// maxOffset = 15, threshold = 10, so onReachEnd fires when offset >= 5
+		// Scroll down 5 times to reach offset 5
+		for (let i = 0; i < 5; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		expect(onReachEnd).toHaveBeenCalled();
+		instance.unmount();
+	});
+});
+
 describe('ScrollableBox — content/viewport/item callbacks', () => {
 	it('onContentHeightChange fires when content height changes', async () => {
 		const onContentHeightChange = vi.fn();

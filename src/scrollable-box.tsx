@@ -229,6 +229,9 @@ function ScrollableBoxRender(
 		onContentHeightChange,
 		onViewportSizeChange,
 		onItemHeightChange,
+		onReachEnd,
+		onReachStart,
+		reachThreshold,
 	} = resolveProps(props);
 
 	validateProps(height, lines, children);
@@ -301,6 +304,9 @@ function ScrollableBoxRender(
 		onBlur,
 		onContentHeightChange,
 		onViewportSizeChange,
+		onReachEnd,
+		onReachStart,
+		reachThreshold,
 	});
 
 	const showBar = showScrollbar && contentHeight > effectiveHeight;

@@ -18,6 +18,9 @@ type UseScrollCallbacksOptions = {
 	onBlur?: () => void;
 	onContentHeightChange?: (height: number, previousHeight: number) => void;
 	onViewportSizeChange?: (height: number, previousHeight: number) => void;
+	onReachEnd?: () => void;
+	onReachStart?: () => void;
+	reachThreshold?: number;
 };
 
 export function useScrollCallbacks({
@@ -28,6 +31,9 @@ export function useScrollCallbacks({
 	onBlur,
 	onContentHeightChange,
 	onViewportSizeChange,
+	onReachEnd,
+	onReachStart,
+	reachThreshold,
 }: UseScrollCallbacksOptions) {
 	const onFocusRef = useRef(onFocus);
 	useEffect(() => {
@@ -104,4 +110,29 @@ export function useScrollCallbacks({
 			onViewportSizeChangeRef.current?.(scroll.viewportHeight, previous);
 		}
 	}, [scroll.viewportHeight]);
+
+	const onReachEndRef = useRef(onReachEnd);
+	useEffect(() => {
+		onReachEndRef.current = onReachEnd;
+	}, [onReachEnd]);
+
+	const onReachStartRef = useRef(onReachStart);
+	useEffect(() => {
+		onReachStartRef.current = onReachStart;
+	}, [onReachStart]);
+
+	const threshold = reachThreshold ?? 5;
+	const maxOffset = Math.max(0, scroll.contentHeight - scroll.viewportHeight);
+
+	useEffect(() => {
+		if (scroll.offset >= maxOffset - threshold && maxOffset > 0) {
+			onReachEndRef.current?.();
+		}
+	}, [scroll.offset, maxOffset, threshold]);
+
+	useEffect(() => {
+		if (scroll.offset <= threshold) {
+			onReachStartRef.current?.();
+		}
+	}, [scroll.offset, threshold]);
 }

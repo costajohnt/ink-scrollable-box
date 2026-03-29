@@ -198,4 +198,10 @@ export type ScrollableBoxProps = {
   onViewportSizeChange?: (height: number, previousHeight: number) => void;
   /** Called when a measured child's height changes (requires measureChildren) */
   onItemHeightChange?: (index: number, height: number, previousHeight: number) => void;
+  /** Called when scroll position is within `reachThreshold` lines of the bottom. Useful for loading more content. */
+  onReachEnd?: () => void;
+  /** Called when scroll position is within `reachThreshold` lines of the top. Useful for loading earlier content. */
+  onReachStart?: () => void;
+  /** Number of lines from the edge to trigger onReachEnd/onReachStart (default: 5) */
+  reachThreshold?: number;
 };
