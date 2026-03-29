@@ -12,7 +12,7 @@ function App() {
 			<Box flexDirection="row" gap={2}>
 				<Box flexDirection="column">
 					<Text dimColor>Panel A</Text>
-					<ScrollableBox height={10} lines={leftLines} border id="left" />
+					<ScrollableBox height={10} lines={leftLines} border id="left" autoFocus />
 				</Box>
 				<Box flexDirection="column">
 					<Text dimColor>Panel B</Text>

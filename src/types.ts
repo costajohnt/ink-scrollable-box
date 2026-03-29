@@ -118,6 +118,8 @@ export type ScrollableBoxProps = {
   showIndicators?: boolean;
   /** Participate in Tab focus cycle (default: true) */
   focusable?: boolean;
+  /** Auto-focus this component on mount (default: false) */
+  autoFocus?: boolean;
   /** Focus ID for programmatic focus */
   id?: string;
   /** Scroll event callback */

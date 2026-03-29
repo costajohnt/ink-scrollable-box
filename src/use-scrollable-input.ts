@@ -5,6 +5,7 @@ import type {UseScrollableResult} from './types.js';
 export type UseScrollableInputOptions = {
 	scroll: UseScrollableResult;
 	focusable?: boolean;
+	autoFocus?: boolean;
 	id?: string;
 	enableVimBindings?: boolean;
 };
@@ -12,10 +13,11 @@ export type UseScrollableInputOptions = {
 export function useScrollableInput({
 	scroll,
 	focusable = true,
+	autoFocus = false,
 	id,
 	enableVimBindings = true,
 }: UseScrollableInputOptions) {
-	const {isFocused} = useFocus({isActive: focusable, id});
+	const {isFocused} = useFocus({isActive: focusable, autoFocus, id});
 
 	// Use ref to avoid stale closures — scroll object changes every render
 	const scrollRef = useRef(scroll);

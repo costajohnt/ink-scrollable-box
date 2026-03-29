@@ -12,6 +12,7 @@ function App() {
 				height={10}
 				lines={lines}
 				border
+				autoFocus
 				scrollbarCharacter="▓"
 				trackCharacter="░"
 				scrollbarColor="cyan"

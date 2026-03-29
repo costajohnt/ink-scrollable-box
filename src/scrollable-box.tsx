@@ -218,6 +218,7 @@ function ScrollableBoxRender(
 	const {isFocused} = useScrollableInput({
 		scroll,
 		focusable,
+		autoFocus: props.autoFocus,
 		id,
 		enableVimBindings,
 	});

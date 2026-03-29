@@ -11,7 +11,7 @@ function App() {
 		<Box flexDirection="column">
 			<Text bold>Large Dataset — 100,000 lines (slice rendering)</Text>
 			<Text dimColor>Use j/k, g/G, u/d, Page Up/Down to navigate</Text>
-			<ScrollableBox height={20} lines={lines} border />
+			<ScrollableBox height={20} lines={lines} border autoFocus />
 		</Box>
 	);
 }

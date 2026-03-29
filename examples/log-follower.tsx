@@ -20,7 +20,7 @@ function App() {
 		<Box flexDirection="column">
 			<Text bold>Log Follower — auto-scrolls to new entries (scroll up to pause)</Text>
 			<Text dimColor>{logs.length} entries</Text>
-			<ScrollableBox height={15} lines={logs} followOutput border />
+			<ScrollableBox height={15} lines={logs} followOutput border autoFocus />
 		</Box>
 	);
 }

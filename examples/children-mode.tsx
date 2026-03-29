@@ -24,7 +24,7 @@ function App() {
 	return (
 		<Box flexDirection="column">
 			<Text bold>Children Mode — styled React nodes</Text>
-			<ScrollableBox height={6} border>
+			<ScrollableBox height={6} border autoFocus>
 				{items.map((item, i) => (
 					<Text key={i} color={colors[item.status]}>
 						{icons[item.status]} {item.text}

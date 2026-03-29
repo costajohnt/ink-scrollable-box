@@ -8,7 +8,7 @@ function App() {
 	return (
 		<Box flexDirection="column">
 			<Text bold>Basic ScrollableBox — 100 items (j/k/g/G to navigate)</Text>
-			<ScrollableBox height={15} lines={lines} border />
+			<ScrollableBox height={15} lines={lines} border autoFocus />
 		</Box>
 	);
 }
