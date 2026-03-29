@@ -314,4 +314,143 @@ describe('useScrollable', () => {
 			instance.unmount();
 		});
 	});
+
+	describe('followOutput', () => {
+		it('auto-scrolls to bottom when content grows while at bottom', () => {
+			const instance = render(
+				<HookTest
+					options={{
+						contentHeight: 20,
+						viewportHeight: 10,
+						followOutput: true,
+						initialOffset: 10,
+					}}
+				/>,
+			);
+			// Verify at bottom initially
+			let state = getState(instance);
+			expect(state.offset).toBe(10);
+			expect(state.isAtBottom).toBe(true);
+
+			// Rerender with more content
+			React.act(() => {
+				instance.rerender(
+					<HookTest
+						options={{
+							contentHeight: 25,
+							viewportHeight: 10,
+							followOutput: true,
+							initialOffset: 10,
+						}}
+					/>,
+				);
+			});
+			state = getState(instance);
+			// New maxOffset = 25 - 10 = 15
+			expect(state.offset).toBe(15);
+			expect(state.isAtBottom).toBe(true);
+			instance.unmount();
+		});
+
+		it('does NOT auto-scroll when user is not at bottom', () => {
+			const instance = render(
+				<HookTest
+					options={{
+						contentHeight: 20,
+						viewportHeight: 10,
+						followOutput: true,
+						initialOffset: 3,
+					}}
+				/>,
+			);
+			let state = getState(instance);
+			expect(state.offset).toBe(3);
+
+			// Rerender with more content
+			React.act(() => {
+				instance.rerender(
+					<HookTest
+						options={{
+							contentHeight: 25,
+							viewportHeight: 10,
+							followOutput: true,
+							initialOffset: 3,
+						}}
+					/>,
+				);
+			});
+			state = getState(instance);
+			// Should not move
+			expect(state.offset).toBe(3);
+			expect(state.isAtBottom).toBe(false);
+			instance.unmount();
+		});
+
+		it('auto-scrolls when content grows from 0', () => {
+			const instance = render(
+				<HookTest
+					options={{
+						contentHeight: 0,
+						viewportHeight: 10,
+						followOutput: true,
+					}}
+				/>,
+			);
+			let state = getState(instance);
+			expect(state.offset).toBe(0);
+
+			// Rerender with content that exceeds viewport
+			React.act(() => {
+				instance.rerender(
+					<HookTest
+						options={{
+							contentHeight: 20,
+							viewportHeight: 10,
+							followOutput: true,
+						}}
+					/>,
+				);
+			});
+			state = getState(instance);
+			// MaxOffset = 20 - 10 = 10
+			expect(state.offset).toBe(10);
+			expect(state.isAtBottom).toBe(true);
+			instance.unmount();
+		});
+
+		it('does NOT auto-scroll when followOutput is false', () => {
+			const instance = render(
+				<HookTest
+					options={{
+						contentHeight: 20,
+						viewportHeight: 10,
+						followOutput: false,
+						initialOffset: 10,
+					}}
+				/>,
+			);
+			let state = getState(instance);
+			expect(state.offset).toBe(10);
+			expect(state.isAtBottom).toBe(true);
+
+			// Rerender with more content
+			React.act(() => {
+				instance.rerender(
+					<HookTest
+						options={{
+							contentHeight: 25,
+							viewportHeight: 10,
+							followOutput: false,
+							initialOffset: 10,
+						}}
+					/>,
+				);
+			});
+			state = getState(instance);
+			// Offset 10 is still valid (maxOffset = 15), stays at 10
+			expect(state.offset).toBe(10);
+			expect(state.isAtBottom).toBe(false);
+			instance.unmount();
+		});
+	});
 });
