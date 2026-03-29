@@ -1,4 +1,9 @@
-import {Children, useEffect, useRef} from 'react';
+import {
+	Children,
+	useEffect,
+	useMemo,
+	useRef,
+} from 'react';
 import {Box, Text} from 'ink';
 import {useScrollable} from './use-scrollable.js';
 import {useScrollableInput} from './use-scrollable-input.js';
@@ -44,7 +49,10 @@ export function ScrollableBox({
 	validateProps(height, lines, children);
 
 	// Determine content
-	const childrenArray = children ? Children.toArray(children) : [];
+	const childrenArray = useMemo(
+		() => (children ? Children.toArray(children) : []),
+		[children],
+	);
 	const contentHeight = lines ? lines.length : childrenArray.length;
 
 	// Account for border reducing effective viewport

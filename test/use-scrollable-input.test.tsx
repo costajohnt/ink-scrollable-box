@@ -180,6 +180,30 @@ describe('useScrollableInput', () => {
     instance.unmount();
   });
 
+  it('Home key jumps to top', async () => {
+    const instance = render(
+      <ScrollableWithInput contentHeight={20} viewportHeight={5} />,
+    );
+    await focus(instance.stdin);
+    await write(instance.stdin, 'G');
+    await write(instance.stdin, '\x1B[H');
+    const state = getState(instance);
+    expect(state.offset).toBe(0);
+    expect(state.isAtTop).toBe(true);
+    instance.unmount();
+  });
+
+  it('End key jumps to bottom', async () => {
+    const instance = render(
+      <ScrollableWithInput contentHeight={20} viewportHeight={5} />,
+    );
+    await focus(instance.stdin);
+    await write(instance.stdin, '\x1B[F');
+    const state = getState(instance);
+    expect(state.isAtBottom).toBe(true);
+    instance.unmount();
+  });
+
   it('ignores input when focusable is false', async () => {
     const instance = render(
       <ScrollableWithInput

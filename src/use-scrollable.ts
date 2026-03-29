@@ -16,6 +16,12 @@ export function useScrollable({
 	followOutput = false,
 	initialOffset = 0,
 }: UseScrollableOptions): UseScrollableResult {
+	if (scrollStep <= 0 || !Number.isFinite(scrollStep)) {
+		throw new Error(
+			`useScrollable: \`scrollStep\` must be a positive number, got ${scrollStep}.`,
+		);
+	}
+
 	const maxOffset = Math.max(0, contentHeight - viewportHeight);
 	const [offset, setOffset] = useState(() => clamp(initialOffset, 0, maxOffset));
 

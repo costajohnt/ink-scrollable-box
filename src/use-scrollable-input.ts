@@ -1,7 +1,7 @@
 import {useFocus, useInput} from 'ink';
 import type {UseScrollableResult} from './types.js';
 
-type UseScrollableInputOptions = {
+export type UseScrollableInputOptions = {
   scroll: UseScrollableResult;
   focusable?: boolean;
   id?: string;
@@ -28,6 +28,10 @@ export function useScrollableInput({
         scroll.pageUp();
       } else if (key.pageDown || input === 'd') {
         scroll.pageDown();
+      } else if (key.home) {
+        scroll.scrollToTop();
+      } else if (key.end) {
+        scroll.scrollToBottom();
       }
     },
     {isActive: isFocused && focusable},

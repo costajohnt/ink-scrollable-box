@@ -1,7 +1,7 @@
 import React from 'react';
 import {describe, it, expect} from 'vitest';
 import {render} from 'ink-testing-library';
-import {Text} from 'ink';
+import {renderToString, Text} from 'ink';
 import {useScrollable} from '../src/use-scrollable.js';
 import type {UseScrollableOptions} from '../src/types.js';
 
@@ -34,6 +34,20 @@ function getState(instance: ReturnType<typeof render>) {
 }
 
 describe('useScrollable', () => {
+	describe('scrollStep validation', () => {
+		it('throws for scrollStep of 0', () => {
+			expect(() => {
+				renderToString(<HookTest options={{contentHeight: 20, viewportHeight: 10, scrollStep: 0}} />);
+			}).toThrow('positive number');
+		});
+
+		it('throws for negative scrollStep', () => {
+			expect(() => {
+				renderToString(<HookTest options={{contentHeight: 20, viewportHeight: 10, scrollStep: -5}} />);
+			}).toThrow('positive number');
+		});
+	});
+
 	describe('Initial state', () => {
 		it('starts at offset 0 with correct derived state when content > viewport', () => {
 			const instance = render(

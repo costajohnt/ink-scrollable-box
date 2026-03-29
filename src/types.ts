@@ -66,7 +66,12 @@ export type ScrollableBoxProps = {
   height: number;
   /** String content — performance mode (mutually exclusive with children) */
   lines?: string[];
-  /** React children — ergonomic mode (mutually exclusive with lines) */
+  /**
+   * React children — ergonomic mode (mutually exclusive with lines).
+   * Each child is assumed to render as exactly 1 terminal line.
+   * Multi-line children (e.g., wrapped text) will cause scroll math
+   * to be incorrect. Use `lines` mode for predictable behavior.
+   */
   children?: React.ReactNode;
   /** Auto-scroll to bottom when content grows (default: false) */
   followOutput?: boolean;
