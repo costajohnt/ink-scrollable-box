@@ -23,8 +23,8 @@ export function Scrollbar({
 	);
 	const maxThumbOffset = viewportHeight - thumbHeight;
 	const maxScrollOffset = contentHeight - viewportHeight;
-	const thumbOffset =
-		maxScrollOffset === 0
+	const thumbOffset
+		= maxScrollOffset === 0
 			? 0
 			: Math.round((offset / maxScrollOffset) * maxThumbOffset);
 
@@ -34,15 +34,11 @@ export function Scrollbar({
 		const character = isThumb ? thumbCharacter : trackCharacter;
 		const color = isThumb ? (isFocused ? thumbColor : thumbDimColor) : trackColor;
 
-		lines.push(
-			<Text key={i} color={color}>
-				{character}
-			</Text>,
-		);
+		lines.push(<Text key={i} color={color}>{character}</Text>);
 	}
 
 	return (
-		<Box flexDirection="column" flexShrink={0} width={1}>
+		<Box flexDirection='column' flexShrink={0} width={1}>
 			{lines}
 		</Box>
 	);
