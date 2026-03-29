@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import React, {useRef, useEffect, useState} from 'react';
 import {
 	describe, it, expect, vi,
@@ -1549,7 +1550,6 @@ describe('ScrollableBox — prop validation: overscan and reachThreshold', () =>
 			renderFn({height: 5, lines: [], reachThreshold: -1}, null);
 		}).toThrow('`reachThreshold` must be a non-negative number');
 	});
-
 });
 
 describe('ScrollableBox — scrollToIndex with measureChildren', () => {
@@ -1769,32 +1769,34 @@ describe('ScrollableBox — scrollToIndex with measureChildren', () => {
 
 describe('ScrollableBox — heightsRef trimming on child removal', () => {
 	it('removes children without crash and heightsRef is trimmed', async () => {
-		function DynamicChildrenTest() {
-			const [count, setCount] = useState(8);
-			useEffect(() => {
-				// Reduce children count after mount to trigger the trimming effect
-				setCount(4);
-			}, []);
-			return (
-				<ScrollableBox height={5} measureChildren showScrollbar={false} showIndicators={false}>
-					{Array.from({length: count}, (_, i) => (
-						<Text key={i}>{`DynItem ${i + 1}`}</Text>
-					))}
-				</ScrollableBox>
-			);
-		}
+		const items8 = Array.from({length: 8}, (_, i) => (
+			<Text key={i}>{`DynItem ${i + 1}`}</Text>
+		));
+		const items4 = Array.from({length: 4}, (_, i) => (
+			<Text key={i}>{`DynItem ${i + 1}`}</Text>
+		));
 
 		let instance!: ReturnType<typeof render>;
 		await React.act(async () => {
-			instance = render(<DynamicChildrenTest />);
+			instance = render(
+				<ScrollableBox height={5} measureChildren showScrollbar={false} showIndicators={false}>
+					{items8}
+				</ScrollableBox>,
+			);
 		});
 
-		// Wait for the setCount(4) effect to run and commit
-		await tick();
+		// Rerender with fewer children to trigger trimming
+		await React.act(async () => {
+			instance.rerender(
+				<ScrollableBox height={5} measureChildren showScrollbar={false} showIndicators={false}>
+					{items4}
+				</ScrollableBox>,
+			);
+		});
+
 		await tick();
 
 		const frame = instance.lastFrame()!;
-		// Should not crash and should show only 4 items
 		expect(frame).toContain('DynItem 1');
 		expect(frame).toContain('DynItem 4');
 		expect(frame).not.toContain('DynItem 5');

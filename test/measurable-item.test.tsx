@@ -1,12 +1,15 @@
 import React from 'react';
-import {describe, it, expect, vi} from 'vitest';
+import {
+	describe, it, expect, vi,
+} from 'vitest';
 import {render} from 'ink-testing-library';
 import {Text} from 'ink';
 import {MeasurableItem} from '../src/measurable-item.js';
 import {tick} from './helpers.js';
 
 vi.mock('ink', async importOriginal => {
-	const original = await importOriginal<typeof import('ink')>();
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- vi.mock factory requires cast
+	const original = await importOriginal() as Record<string, unknown>;
 	return {
 		...original,
 		measureElement: vi.fn(original.measureElement),
@@ -27,9 +30,7 @@ describe('MeasurableItem', () => {
 	});
 
 	it('falls back to height=1 when measureElement throws', async () => {
-		// Import the mocked module so we can control the mock
 		const ink = await import('ink');
-		// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 		const mockMeasureElement = ink.measureElement as ReturnType<typeof vi.fn>;
 		mockMeasureElement.mockImplementationOnce(() => {
 			throw new Error('yoga node not ready');
@@ -43,7 +44,6 @@ describe('MeasurableItem', () => {
 		);
 		await tick();
 
-		// The catch block calls onMeasure(1) as fallback
 		expect(onMeasure).toHaveBeenCalledWith(1);
 		unmount();
 	});
