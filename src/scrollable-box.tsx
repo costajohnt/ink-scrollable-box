@@ -159,6 +159,7 @@ const defaultProps = {
 	enableVimBindings: true,
 	measureChildren: false,
 	overscan: 0,
+	scrollbarPosition: 'inside',
 } as const;
 
 function resolveProps(props: ScrollableBoxProps) {
@@ -176,6 +177,7 @@ function resolveProps(props: ScrollableBoxProps) {
 		enableVimBindings: props.enableVimBindings ?? defaultProps.enableVimBindings,
 		measureChildren: props.measureChildren ?? defaultProps.measureChildren,
 		overscan: props.overscan ?? defaultProps.overscan,
+		scrollbarPosition: props.scrollbarPosition ?? defaultProps.scrollbarPosition,
 	};
 }
 
@@ -192,7 +194,6 @@ function useContentHeight(
 	return measureChildren ? measuredHeight : childrenLength;
 }
 
-// eslint-disable-next-line complexity
 function ScrollableBoxRender(
 	props: ScrollableBoxProps,
 	ref: React.ForwardedRef<ScrollableBoxRef>,
@@ -374,22 +375,24 @@ function ScrollableBoxRender(
 		</Box>
 	);
 
-	if (isOutside) {
-		return (
-			<Box flexDirection='row' width={width}>
-				{contentBox}
-				{scrollbarElement
-					? (
-						<Box flexDirection='column' paddingTop={border ? 1 : 0} paddingBottom={border ? 1 : 0}>
-							{scrollbarElement}
-						</Box>
-					)
-					: null}
-			</Box>
-		);
+	if (!isOutside) {
+		return contentBox;
 	}
 
-	return contentBox;
+	const borderPadding = border ? 1 : 0;
+
+	return (
+		<Box flexDirection='row' width={width}>
+			{contentBox}
+			{showBar
+				? (
+					<Box flexDirection='column' paddingTop={borderPadding} paddingBottom={borderPadding}>
+						{scrollbarElement}
+					</Box>
+				)
+				: null}
+		</Box>
+	);
 }
 
 export const ScrollableBox = forwardRef<ScrollableBoxRef, ScrollableBoxProps>(ScrollableBoxRender);
