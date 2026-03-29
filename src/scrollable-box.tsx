@@ -1,6 +1,8 @@
 import {
 	Children,
+	forwardRef,
 	useEffect,
+	useImperativeHandle,
 	useMemo,
 	useRef,
 } from 'react';
@@ -8,7 +10,7 @@ import {Box, Text} from 'ink';
 import {useScrollable} from './use-scrollable.js';
 import {useScrollableInput} from './use-scrollable-input.js';
 import {Scrollbar} from './scrollbar.js';
-import type {ScrollableBoxProps} from './types.js';
+import type {ScrollableBoxProps, ScrollableBoxRef} from './types.js';
 
 function validateProps(height: number, lines?: string[], children?: React.ReactNode) {
 	if (lines !== undefined && children !== undefined) {
@@ -24,7 +26,7 @@ function validateProps(height: number, lines?: string[], children?: React.ReactN
 	}
 }
 
-export function ScrollableBox({
+function ScrollableBoxRender({
 	height,
 	lines,
 	children,
@@ -48,7 +50,7 @@ export function ScrollableBox({
 	enableVimBindings = true,
 	onFocus,
 	onBlur,
-}: ScrollableBoxProps) {
+}: ScrollableBoxProps, ref: React.ForwardedRef<ScrollableBoxRef>) {
 	validateProps(height, lines, children);
 
 	// Determine content
@@ -67,6 +69,62 @@ export function ScrollableBox({
 		scrollStep,
 		followOutput,
 	});
+
+	useImperativeHandle(ref, () => ({
+		scrollTo(offset: number) {
+			scroll.scrollTo(offset);
+		},
+		scrollToTop() {
+			scroll.scrollToTop();
+		},
+		scrollToBottom() {
+			scroll.scrollToBottom();
+		},
+		scrollUp() {
+			scroll.scrollUp();
+		},
+		scrollDown() {
+			scroll.scrollDown();
+		},
+		pageUp() {
+			scroll.pageUp();
+		},
+		pageDown() {
+			scroll.pageDown();
+		},
+		halfPageUp() {
+			scroll.halfPageUp();
+		},
+		halfPageDown() {
+			scroll.halfPageDown();
+		},
+		scrollToIndex(index: number, options?: {align?: 'start' | 'center' | 'end'}) {
+			const align = options?.align ?? 'start';
+			let target: number;
+			if (align === 'start') {
+				target = index;
+			} else if (align === 'end') {
+				target = index - effectiveHeight + 1;
+			} else {
+				// center
+				target = index - Math.floor(effectiveHeight / 2);
+			}
+
+			scroll.scrollTo(target);
+		},
+		getScrollState() {
+			return {
+				offset: scroll.offset,
+				contentHeight: scroll.contentHeight,
+				viewportHeight: scroll.viewportHeight,
+				canScrollUp: scroll.canScrollUp,
+				canScrollDown: scroll.canScrollDown,
+				isAtTop: scroll.isAtTop,
+				isAtBottom: scroll.isAtBottom,
+				percentage: scroll.percentage,
+			};
+		},
+	}), [scroll, effectiveHeight]);
 
 	const {isFocused} = useScrollableInput({
 		scroll,
@@ -183,3 +241,6 @@ export function ScrollableBox({
 		</Box>
 	);
 }
+
+export const ScrollableBox = forwardRef<ScrollableBoxRef, ScrollableBoxProps>(ScrollableBoxRender);
+ScrollableBox.displayName = 'ScrollableBox';

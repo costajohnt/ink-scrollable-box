@@ -5,6 +5,7 @@ export type {
 	UseScrollableResult,
 	ScrollbarProps,
 	ScrollableBoxProps,
+	ScrollableBoxRef,
 } from './types.js';
 export {useScrollable} from './use-scrollable.js';
 export type {UseScrollableInputOptions} from './use-scrollable-input.js';

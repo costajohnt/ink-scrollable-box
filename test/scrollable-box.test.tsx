@@ -1,10 +1,11 @@
-import React from 'react';
+import React, {useRef, useEffect} from 'react';
 import {
 	describe, it, expect, vi,
 } from 'vitest';
 import {render} from 'ink-testing-library';
 import {Text} from 'ink';
 import {ScrollableBox} from '../src/scrollable-box.js';
+import type {ScrollableBoxRef} from '../src/types.js';
 
 /** Wait for a microtask/macrotask cycle to flush React state and effects. */
 async function tick() {
@@ -207,29 +208,32 @@ describe('ScrollableBox — children mode', () => {
 });
 
 describe('ScrollableBox — prop validation', () => {
-	// React catches errors thrown during render internally, so we call the
-	// component function directly to bypass the reconciler and observe the throw.
+	// ScrollableBox is wrapped with forwardRef, so we access the inner render
+	// function to call it directly and observe validation throws.
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+	const renderFn = (ScrollableBox as unknown as {render: (...args: unknown[]) => unknown}).render;
+
 	it('throws when both lines and children are provided', () => {
 		expect(() => {
-			ScrollableBox({height: 5, lines: ['test'], children: <Text>child</Text>});
+			renderFn({height: 5, lines: ['test'], children: <Text>child</Text>}, null);
 		}).toThrow('Provide either `lines` or `children`, not both');
 	});
 
 	it('throws for height <= 0', () => {
 		expect(() => {
-			ScrollableBox({height: 0, lines: []});
+			renderFn({height: 0, lines: []}, null);
 		}).toThrow('`height` must be a positive integer');
 	});
 
 	it('throws for non-integer height (5.5)', () => {
 		expect(() => {
-			ScrollableBox({height: 5.5, lines: []});
+			renderFn({height: 5.5, lines: []}, null);
 		}).toThrow('`height` must be a positive integer');
 	});
 
 	it('throws for negative height (-1)', () => {
 		expect(() => {
-			ScrollableBox({height: -1, lines: []});
+			renderFn({height: -1, lines: []}, null);
 		}).toThrow('`height` must be a positive integer');
 	});
 });
@@ -382,6 +386,196 @@ describe('ScrollableBox — enableVimBindings', () => {
 		await write(instance.stdin, arrowDown);
 		expect(instance.lastFrame()!).toContain('Line 2');
 		expect(instance.lastFrame()!).not.toContain('Line 1');
+		instance.unmount();
+	});
+});
+
+describe('ScrollableBox — ref API', () => {
+	// Helper component that exposes the ref and runs an action via useEffect
+	function RefTest({lines, action}: {lines: string[]; action: (ref: ScrollableBoxRef) => void}) {
+		const ref = useRef<ScrollableBoxRef>(null);
+		useEffect(() => {
+			if (ref.current) {
+				action(ref.current);
+			}
+		}, [action]);
+		return (
+			<ScrollableBox
+				ref={ref}
+				height={5}
+				lines={lines}
+			/>
+		);
+	}
+
+	it('scrollTo(n) via ref changes visible content', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						ref.scrollTo(5);
+					}}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// offset=5 means lines 6-10 visible
+		expect(frame).toContain('Line 6');
+		expect(frame).toContain('Line 10');
+		expect(frame).not.toMatch(/Line 5\b/);
+		instance.unmount();
+	});
+
+	it('scrollToTop() via ref shows first lines', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						ref.scrollTo(10);
+						ref.scrollToTop();
+					}}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		expect(frame).toContain('Line 1');
+		expect(frame).toContain('Line 5');
+		instance.unmount();
+	});
+
+	it('scrollToBottom() via ref shows last lines', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						ref.scrollToBottom();
+					}}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		expect(frame).toContain('Line 16');
+		expect(frame).toContain('Line 20');
+		expect(frame).not.toContain('Line 15');
+		instance.unmount();
+	});
+
+	it('scrollToIndex(n, {align: "start"}) shows item at top', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						ref.scrollToIndex(7, {align: 'start'});
+					}}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// index 7 = Line 8 (0-based), should be at top of viewport
+		expect(frame).toContain('Line 8');
+		expect(frame).toContain('Line 12');
+		expect(frame).not.toContain('Line 7');
+		instance.unmount();
+	});
+
+	it('scrollToIndex(n, {align: "center"}) shows item centered', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						ref.scrollToIndex(10, {align: 'center'});
+					}}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// index 10 = Line 11 (0-based), viewport height=5, floor(5/2)=2
+		// target = 10 - 2 = 8 => offset 8, showing lines 9-13
+		expect(frame).toContain('Line 9');
+		expect(frame).toContain('Line 11');
+		expect(frame).toContain('Line 13');
+		instance.unmount();
+	});
+
+	it('scrollToIndex(n, {align: "end"}) shows item at bottom of viewport', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						ref.scrollToIndex(9, {align: 'end'});
+					}}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// index 9 = Line 10 (0-based), viewport height=5
+		// target = 9 - 5 + 1 = 5 => offset 5, showing lines 6-10
+		expect(frame).toContain('Line 6');
+		expect(frame).toContain('Line 10');
+		expect(frame).not.toContain('Line 5');
+		instance.unmount();
+	});
+
+	it('getScrollState() returns correct state', async () => {
+		const lines = makeLines(20);
+		const outerRef = React.createRef<ScrollableBoxRef>();
+
+		function StateTest() {
+			useEffect(() => {
+				if (outerRef.current) {
+					outerRef.current.scrollTo(5);
+				}
+			}, []);
+			return <ScrollableBox ref={outerRef} height={5} lines={lines} />;
+		}
+
+		const instance = render(<StateTest />);
+		// Wait for the initial render effect (scrollTo call) and the
+		// subsequent re-render to commit so the ref handle is updated
+		await tick();
+		await tick();
+		await tick();
+
+		const scrollState = outerRef.current!.getScrollState();
+
+		expect(scrollState).toBeDefined();
+		expect(scrollState.offset).toBe(5);
+		expect(scrollState.contentHeight).toBe(20);
+		expect(scrollState.viewportHeight).toBe(5);
+		expect(scrollState.canScrollUp).toBe(true);
+		expect(scrollState.canScrollDown).toBe(true);
+		expect(scrollState.isAtTop).toBe(false);
+		expect(scrollState.isAtBottom).toBe(false);
 		instance.unmount();
 	});
 });

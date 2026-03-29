@@ -65,6 +65,31 @@ export type ScrollbarProps = {
   trackColor?: string;
 };
 
+export type ScrollableBoxRef = {
+  /** Scroll to a specific offset (clamped to valid range) */
+  scrollTo: (offset: number) => void;
+  /** Jump to the top */
+  scrollToTop: () => void;
+  /** Jump to the bottom */
+  scrollToBottom: () => void;
+  /** Scroll up by scrollStep lines */
+  scrollUp: () => void;
+  /** Scroll down by scrollStep lines */
+  scrollDown: () => void;
+  /** Scroll up by one viewport height */
+  pageUp: () => void;
+  /** Scroll down by one viewport height */
+  pageDown: () => void;
+  /** Scroll up by half a viewport height */
+  halfPageUp: () => void;
+  /** Scroll down by half a viewport height */
+  halfPageDown: () => void;
+  /** Scroll to a specific item index with alignment */
+  scrollToIndex: (index: number, options?: {align?: 'start' | 'center' | 'end'}) => void;
+  /** Get current scroll state */
+  getScrollState: () => ScrollState;
+};
+
 export type ScrollableBoxProps = {
   /** Viewport height in terminal lines (required) */
   height: number;
