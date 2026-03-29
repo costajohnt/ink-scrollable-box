@@ -625,6 +625,42 @@ describe('ScrollableBox — overscan', () => {
 	});
 });
 
+describe('ScrollableBox — measureChildren', () => {
+	it('handles children assumed to be 1 line by default', () => {
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={3}>
+				<Text>Line 1</Text>
+				<Text>Line 2</Text>
+				<Text>Line 3</Text>
+				<Text>Line 4</Text>
+			</ScrollableBox>,
+		);
+		const frame = lastFrame()!;
+		expect(frame).toContain('Line 1');
+		expect(frame).toContain('Line 3');
+		expect(frame).not.toContain('Line 4');
+		unmount();
+	});
+
+	it('renders all children when measureChildren is true', () => {
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={5} measureChildren>
+				<Text>Line 1</Text>
+				<Text>Line 2</Text>
+				<Text>Line 3</Text>
+				<Text>Line 4</Text>
+				<Text>Line 5</Text>
+				<Text>Line 6</Text>
+			</ScrollableBox>,
+		);
+		const frame = lastFrame()!;
+		// First 5 lines should be visible
+		expect(frame).toContain('Line 1');
+		expect(frame).toContain('Line 5');
+		unmount();
+	});
+});
+
 describe('ScrollableBox — controlled mode', () => {
 	it('setting offset={10} positions viewport at offset 10', async () => {
 		const lines = makeLines(20);

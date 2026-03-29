@@ -5,11 +5,13 @@ import {
 	useImperativeHandle,
 	useMemo,
 	useRef,
+	useState,
 } from 'react';
 import {Box, Text} from 'ink';
 import {useScrollable} from './use-scrollable.js';
 import {useScrollableInput} from './use-scrollable-input.js';
 import {Scrollbar} from './scrollbar.js';
+import {MeasurableItem} from './measurable-item.js';
 import type {ScrollableBoxProps, ScrollableBoxRef} from './types.js';
 
 function validateProps(height: number, lines?: string[], children?: React.ReactNode) {
@@ -53,6 +55,7 @@ function ScrollableBoxRender({
 	overscan,
 	offset,
 	onOffsetChange,
+	measureChildren = false,
 }: ScrollableBoxProps, ref: React.ForwardedRef<ScrollableBoxRef>) {
 	validateProps(height, lines, children);
 
@@ -61,7 +64,24 @@ function ScrollableBoxRender({
 		() => (children ? Children.toArray(children) : []),
 		[children],
 	);
-	const contentHeight = lines ? lines.length : childrenArray.length;
+
+	// Measurement state for variable-height children
+	const heightsRef = useRef<number[]>([]);
+	const [measuredHeight, setMeasuredHeight] = useState(childrenArray.length);
+
+	// After all children are measured, update total height
+	useEffect(() => {
+		if (measureChildren && heightsRef.current.length === childrenArray.length) {
+			const total = heightsRef.current.reduce((sum, h) => sum + h, 0);
+			if (total !== measuredHeight && total > 0) {
+				setMeasuredHeight(total);
+			}
+		}
+	}, [measureChildren, childrenArray.length, measuredHeight]);
+
+	const contentHeight = lines
+		? lines.length
+		: (measureChildren ? measuredHeight : childrenArray.length);
 
 	// Account for border reducing effective viewport
 	const effectiveHeight = border ? Math.max(1, height - 2) : height;
@@ -196,16 +216,38 @@ function ScrollableBoxRender({
 			.map((line, _i, _array, key = `line-${scroll.offset + _i}`) => (
 				<Text key={key}>{line}</Text>
 			))
-		: childrenArray.slice(scroll.offset, scroll.offset + effectiveHeight);
+		: (measureChildren
+			? undefined // measureChildren mode renders all children below
+			: childrenArray.slice(scroll.offset, scroll.offset + effectiveHeight));
+
+	// measureChildren mode: render all children with measurement wrappers
+	// and use negative marginTop to position the viewport at the scroll offset
+	const measuredContent = measureChildren
+		? (
+			<Box flexDirection='column' flexGrow={1} marginTop={-scroll.offset}>
+				{childrenArray.map((child, i) => (
+					<MeasurableItem
+						key={i}
+						onMeasure={h => {
+							heightsRef.current[i] = h;
+						}}
+					>
+						{child}
+					</MeasurableItem>
+				))}
+			</Box>
+		)
+		: undefined;
 
 	// Overscan: pre-render extra items above and below the viewport in
 	// zero-height hidden boxes so they exist in React's VDOM for faster
 	// reconciliation when they scroll into view.
+	// Overscan is not used in measureChildren mode (all children are already rendered).
 	const overscanValue = overscan ?? 0;
 	const overscanAboveStart = Math.max(0, scroll.offset - overscanValue);
 	const overscanBelowEnd = Math.min(contentHeight, scroll.offset + effectiveHeight + overscanValue);
 
-	const overscanAbove = overscanValue > 0 && overscanAboveStart < scroll.offset
+	const overscanAbove = !measureChildren && overscanValue > 0 && overscanAboveStart < scroll.offset
 		? (
 			<Box height={0} overflowY='hidden' flexDirection='column'>
 				{lines
@@ -217,7 +259,7 @@ function ScrollableBoxRender({
 		)
 		: null;
 
-	const overscanBelow = overscanValue > 0 && scroll.offset + effectiveHeight < overscanBelowEnd
+	const overscanBelow = !measureChildren && overscanValue > 0 && scroll.offset + effectiveHeight < overscanBelowEnd
 		? (
 			<Box height={0} overflowY='hidden' flexDirection='column'>
 				{lines
@@ -248,9 +290,13 @@ function ScrollableBoxRender({
 				overflowY='hidden'
 			>
 				<Box flexDirection='column' flexGrow={1}>
-					{overscanAbove}
-					{visibleContent}
-					{overscanBelow}
+					{measureChildren
+						? measuredContent
+						: (<>
+							{overscanAbove}
+							{visibleContent}
+							{overscanBelow}
+						</>)}
 				</Box>
 				{showBar
 					? (

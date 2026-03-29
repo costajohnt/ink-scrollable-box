@@ -171,4 +171,11 @@ export type ScrollableBoxProps = {
    * NOTE: This prop is currently a no-op. See `mouseWheel` for details.
    */
   mouseWheelLines?: number;
+  /**
+   * Enable measurement of children's actual heights for accurate scrolling
+   * with multi-line children. When true, all children are rendered and measured
+   * (O(n) rendering). When false, children are assumed to be 1 line each
+   * (O(viewport) rendering). Default: false.
+   */
+  measureChildren?: boolean;
 };
