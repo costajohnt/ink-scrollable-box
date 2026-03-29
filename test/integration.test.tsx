@@ -11,6 +11,25 @@ function makeLines(prefix: string, n: number): string[] {
 	return Array.from({length: n}, (_, i) => `${prefix}-${i + 1}`);
 }
 
+/** Wait for a microtask/macrotask cycle to flush React state and effects. */
+async function tick() {
+	await new Promise<void>(resolve => {
+		setImmediate(resolve);
+	});
+}
+
+async function write(stdin: ReturnType<typeof render>['stdin'], data: string) {
+	stdin.write(data);
+	await tick();
+	await tick();
+}
+
+async function focus(stdin: ReturnType<typeof render>['stdin']) {
+	stdin.write(tab);
+	await tick();
+	await tick();
+}
+
 describe('integration', () => {
 	it('two ScrollableBox instances with independent scroll via Tab', async () => {
 		const {lastFrame, stdin, unmount} = render(
@@ -20,33 +39,17 @@ describe('integration', () => {
 			</Box>,
 		);
 
-		// Tab to focus first pane
-		stdin.write(tab);
-		await new Promise<void>(resolve => {
-			setTimeout(resolve, 50);
-		});
-
-		// Scroll pane A
-		stdin.write(arrowDown);
-		await new Promise<void>(resolve => {
-			setTimeout(resolve, 50);
-		});
+		await focus(stdin);
+		await write(stdin, arrowDown);
 
 		let frame = lastFrame()!;
 		expect(frame).toContain('A-2'); // Pane A scrolled
 		expect(frame).toContain('B-1'); // Pane B unchanged
 
 		// Tab to second pane
-		stdin.write(tab);
-		await new Promise<void>(resolve => {
-			setTimeout(resolve, 50);
-		});
-
-		stdin.write(arrowDown);
-		stdin.write(arrowDown);
-		await new Promise<void>(resolve => {
-			setTimeout(resolve, 50);
-		});
+		await write(stdin, tab);
+		await write(stdin, arrowDown);
+		await write(stdin, arrowDown);
 
 		frame = lastFrame()!;
 		expect(frame).toContain('B-3'); // Pane B scrolled
@@ -63,15 +66,8 @@ describe('integration', () => {
 		const elapsed = Date.now() - start;
 		expect(elapsed).toBeLessThan(1000);
 
-		stdin.write(tab);
-		await new Promise<void>(resolve => {
-			setTimeout(resolve, 50);
-		});
-
-		stdin.write('G'); // Jump to bottom
-		await new Promise<void>(resolve => {
-			setTimeout(resolve, 50);
-		});
+		await focus(stdin);
+		await write(stdin, 'G'); // Jump to bottom
 
 		const frame = lastFrame()!;
 		expect(frame).toContain('Line 9999');
