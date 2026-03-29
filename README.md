@@ -213,6 +213,7 @@ render(<App />);
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `height` | `number` | **required** | Viewport height in terminal lines |
+| `width` | `number` | -- | Viewport width in terminal columns. When set, fixes the container width. |
 | `lines` | `string[]` | -- | String content (mutually exclusive with `children`) |
 | `children` | `ReactNode` | -- | React node content (mutually exclusive with `lines`) |
 | `followOutput` | `boolean` | `false` | Auto-scroll to bottom when content grows |

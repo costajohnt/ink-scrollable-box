@@ -105,6 +105,8 @@ export type ScrollableBoxRef = {
 export type ScrollableBoxProps = {
   /** Viewport height in terminal lines (required) */
   height: number;
+  /** Viewport width in terminal columns. When set, the container has a fixed width. */
+  width?: number;
   /** String content — performance mode (mutually exclusive with children) */
   lines?: string[];
   /**

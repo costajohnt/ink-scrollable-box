@@ -198,6 +198,7 @@ function ScrollableBoxRender(
 ) {
 	const {
 		height,
+		width,
 		lines,
 		children,
 		followOutput,
@@ -319,6 +320,7 @@ function ScrollableBoxRender(
 	return (
 		<Box
 			flexDirection='column'
+			width={width}
 			borderStyle={border ? 'round' : undefined}
 			borderColor={border ? activeBorderColor : undefined}
 		>

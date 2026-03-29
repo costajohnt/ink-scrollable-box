@@ -91,6 +91,29 @@ describe('ScrollableBox — lines mode', () => {
 		unmount();
 	});
 
+	it('width prop constrains container to fixed width', () => {
+		const lines = Array.from({length: 10}, (_, i) => `Left-${i + 1}`);
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={5} width={30} lines={lines}/>,
+		);
+		const frame = lastFrame()!;
+		// Every non-empty line should be at most 30 characters wide
+		for (const line of frame.split('\n').filter(l => l.length > 0)) {
+			expect(line.length).toBeLessThanOrEqual(30);
+		}
+		unmount();
+	});
+
+	it('without width prop, container auto-sizes', () => {
+		const lines = makeLines(5);
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={5} lines={lines}/>,
+		);
+		const frame = lastFrame()!;
+		expect(frame).toContain('Line 1');
+		unmount();
+	});
+
 	it('renders empty viewport for empty lines', () => {
 		const {lastFrame, unmount} = render(
 			<ScrollableBox height={5} lines={[]}/>,
