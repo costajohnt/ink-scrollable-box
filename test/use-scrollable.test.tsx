@@ -392,12 +392,13 @@ describe('useScrollable', () => {
 	});
 
 	describe('dynamic size changes', () => {
-		it('clamps offset when viewportHeight increases', () => {
+		it('preserves proportional position when viewportHeight increases', () => {
 			const instance = render(
 				<HookTest options={{contentHeight: 50, viewportHeight: 10, initialOffset: 35}} />,
 			);
 
-			// Increase viewport — maxOffset drops to 50-30=20, offset should clamp from 35 to 20
+			// Increase viewport — old maxOffset=40, offset=35 (87.5%)
+			// New maxOffset=20, proportional: Math.round(0.875 * 20) = 18
 			React.act(() => {
 				instance.rerender(
 					<HookTest options={{contentHeight: 50, viewportHeight: 30, initialOffset: 35}} />,
@@ -405,7 +406,7 @@ describe('useScrollable', () => {
 			});
 
 			const state = getState(instance);
-			expect(state.offset).toBe(20);
+			expect(state.offset).toBe(18);
 			instance.unmount();
 		});
 
@@ -438,6 +439,111 @@ describe('useScrollable', () => {
 			});
 
 			const state = getState(instance);
+			expect(state.offset).toBe(5);
+			instance.unmount();
+		});
+	});
+
+	describe('proportional resize preservation', () => {
+		it('preserves proportional scroll position on viewport resize', () => {
+			const instance = render(
+				<HookTest options={{contentHeight: 100, viewportHeight: 10, initialOffset: 45}} />,
+			);
+			let state = getState(instance);
+			expect(state.offset).toBe(45); // 50% of maxOffset=90
+
+			// Viewport shrinks (simulating terminal resize)
+			React.act(() => {
+				instance.rerender(
+					<HookTest options={{contentHeight: 100, viewportHeight: 20, initialOffset: 45}} />,
+				);
+			});
+
+			state = getState(instance);
+			// New maxOffset = 80. 50% = 40
+			expect(state.offset).toBe(40);
+			instance.unmount();
+		});
+
+		it('preserves proportional position when viewport shrinks', () => {
+			// Start at 50% with viewport=20, maxOffset=80
+			const instance = render(
+				<HookTest options={{contentHeight: 100, viewportHeight: 20, initialOffset: 40}} />,
+			);
+			let state = getState(instance);
+			expect(state.offset).toBe(40); // 50% of maxOffset=80
+
+			// Viewport shrinks to 10, maxOffset becomes 90
+			React.act(() => {
+				instance.rerender(
+					<HookTest options={{contentHeight: 100, viewportHeight: 10, initialOffset: 40}} />,
+				);
+			});
+
+			state = getState(instance);
+			// 50% of 90 = 45
+			expect(state.offset).toBe(45);
+			instance.unmount();
+		});
+
+		it('keeps offset at 0 when at top during viewport resize', () => {
+			const instance = render(
+				<HookTest options={{contentHeight: 100, viewportHeight: 10, initialOffset: 0}} />,
+			);
+			let state = getState(instance);
+			expect(state.offset).toBe(0);
+
+			React.act(() => {
+				instance.rerender(
+					<HookTest options={{contentHeight: 100, viewportHeight: 20, initialOffset: 0}} />,
+				);
+			});
+
+			state = getState(instance);
+			// 0% stays at 0
+			expect(state.offset).toBe(0);
+			instance.unmount();
+		});
+
+		it('keeps offset at bottom when at bottom during viewport resize', () => {
+			// Start at bottom: maxOffset=90, offset=90 (100%)
+			const instance = render(
+				<HookTest options={{contentHeight: 100, viewportHeight: 10, initialOffset: 90}} />,
+			);
+			let state = getState(instance);
+			expect(state.offset).toBe(90);
+			expect(state.isAtBottom).toBe(true);
+
+			// Viewport grows to 20, maxOffset becomes 80
+			React.act(() => {
+				instance.rerender(
+					<HookTest options={{contentHeight: 100, viewportHeight: 20, initialOffset: 90}} />,
+				);
+			});
+
+			state = getState(instance);
+			// 100% of 80 = 80
+			expect(state.offset).toBe(80);
+			expect(state.isAtBottom).toBe(true);
+			instance.unmount();
+		});
+
+		it('does not apply proportional adjustment when content height also changes', () => {
+			const instance = render(
+				<HookTest options={{contentHeight: 50, viewportHeight: 10, initialOffset: 5}} />,
+			);
+			let state = getState(instance);
+			expect(state.offset).toBe(5);
+
+			// Both contentHeight and viewportHeight change — should just clamp, not proportional
+			React.act(() => {
+				instance.rerender(
+					<HookTest options={{contentHeight: 100, viewportHeight: 20, initialOffset: 5}} />,
+				);
+			});
+
+			state = getState(instance);
+			// Offset 5 is still valid (maxOffset=80), stays at 5
 			expect(state.offset).toBe(5);
 			instance.unmount();
 		});

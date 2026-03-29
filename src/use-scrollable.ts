@@ -53,6 +53,13 @@ export function useScrollable({
 			}
 		}
 
+		// Preserve proportional scroll position on pure viewport resize
+		// (contentHeight unchanged, only viewportHeight changed)
+		if (contentHeight === previousContentHeight && maxOffset !== previousMaxOffset && previousMaxOffset > 0) {
+			const previousPercentage = offset / previousMaxOffset;
+			adjustedOffset = Math.round(previousPercentage * maxOffset);
+		}
+
 		// Clamp to valid range (handles viewport/content resize)
 		adjustedOffset = clamp(adjustedOffset, 0, maxOffset);
 
