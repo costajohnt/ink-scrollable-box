@@ -4,7 +4,7 @@
 [![CI](https://github.com/costajohnt/ink-scrollable-box/actions/workflows/ci.yml/badge.svg)](https://github.com/costajohnt/ink-scrollable-box/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Scrollable container component for Ink with keyboard navigation, vim bindings, and auto-follow.
+Scrollable container component for [Ink](https://github.com/vadimdemedes/ink) with keyboard navigation, vim bindings, scrollbar styles, and auto-follow.
 
 ## Install
 
@@ -16,158 +16,189 @@ pnpm add ink-scrollable-box
 
 Requires `ink >= 4` and `react >= 18` as peer dependencies.
 
-## Quick Start — Lines Mode
-
-Pass an array of strings via `lines` for the simplest scrollable list:
+## Quick Start
 
 ```tsx
-import React from 'react';
+import {render} from 'ink';
+import {ScrollableBox} from 'ink-scrollable-box';
+
+const lines = Array.from({length: 100}, (_, i) => `Item ${i + 1}`);
+
+render(<ScrollableBox height={15} lines={lines} autoFocus border />);
+```
+
+## Features
+
+- Two content modes: `lines` (string array, virtualized) and `children` (React nodes)
+- Keyboard navigation with arrow keys, Page Up/Down, Home/End
+- Vim bindings (j/k/g/G/u/d, Ctrl+U/D)
+- Auto-follow output (log tailing) with manual scroll-to-pause
+- Proportional scrollbar with 4 built-in styles (block, line, thick, dots)
+- Half-line precision scrollbar rendering for block style
+- Tab-based focus management across multiple panes
+- `autoFocus` for immediate keyboard control on mount
+- Controlled mode via `offset` / `onOffsetChange`
+- Ref API for programmatic scrolling (`scrollTo`, `scrollToIndex`, etc.)
+- Linked scroll via `useLinkedScroll` hook
+- Infinite scroll callbacks (`onReachEnd`, `onReachStart`)
+- Variable-height child measurement (`measureChildren`)
+- Overscan for pre-rendering items above/below viewport
+- Fully customizable scrollbar characters, colors, and border styling
+- Standalone `useScrollable` and `useScrollableInput` hooks
+- Zero runtime dependencies (peer deps only)
+- TypeScript-first with full type exports
+
+## Examples
+
+### Lines Mode (basic)
+
+```tsx
 import {render, Box, Text} from 'ink';
 import {ScrollableBox} from 'ink-scrollable-box';
 
 const lines = Array.from({length: 100}, (_, i) => `Item ${i + 1}`);
 
-function App() {
-  return (
-    <Box flexDirection="column">
-      <Text bold>Basic ScrollableBox — 100 items (j/k/g/G to navigate)</Text>
-      <ScrollableBox height={15} lines={lines} border />
-    </Box>
-  );
-}
-
-render(<App />);
+render(
+  <Box flexDirection="column">
+    <Text bold>100 items -- j/k/g/G to navigate</Text>
+    <ScrollableBox height={15} lines={lines} autoFocus border />
+  </Box>
+);
 ```
 
-## Children Mode
-
-Pass React nodes as children for full styling control:
+### Children Mode (styled React nodes)
 
 ```tsx
-import React from 'react';
-import {render, Box, Text} from 'ink';
+import {render, Text} from 'ink';
 import {ScrollableBox} from 'ink-scrollable-box';
 
 const items = [
-  {status: 'pass', text: 'Build succeeded'},
-  {status: 'fail', text: 'Test: auth.test.ts failed'},
-  {status: 'warn', text: 'Coverage: 89% (below 95% threshold)'},
+  {color: 'green', text: 'Build succeeded'},
+  {color: 'red', text: 'Test: auth.test.ts failed'},
+  {color: 'yellow', text: 'Coverage: 89%'},
 ];
 
-const colors = {pass: 'green', warn: 'yellow', fail: 'red'};
-const icons = {pass: '✔', warn: '⚠', fail: '✘'};
-
-function App() {
-  return (
-    <ScrollableBox height={6} border>
-      {items.map((item, i) => (
-        <Text key={i} color={colors[item.status]}>
-          {icons[item.status]} {item.text}
-        </Text>
-      ))}
-    </ScrollableBox>
-  );
-}
-
-render(<App />);
+render(
+  <ScrollableBox height={6} autoFocus border>
+    {items.map((item, i) => (
+      <Text key={i} color={item.color}>{item.text}</Text>
+    ))}
+  </ScrollableBox>
+);
 ```
 
-## Log Follower
-
-Use `followOutput` to auto-scroll to new content as it streams in. Scroll up manually to pause following:
+### Log Follower (followOutput)
 
 ```tsx
-import React, {useState, useEffect} from 'react';
-import {render, Box, Text} from 'ink';
+import {useState, useEffect} from 'react';
+import {render, Text} from 'ink';
 import {ScrollableBox} from 'ink-scrollable-box';
 
 function App() {
   const [logs, setLogs] = useState<string[]>([]);
-
   useEffect(() => {
-    const interval = setInterval(() => {
-      setLogs(prev => [
-        ...prev,
-        `[${new Date().toISOString()}] Log entry #${prev.length + 1}`,
-      ]);
+    const id = setInterval(() => {
+      setLogs(prev => [...prev, `[${new Date().toISOString()}] Entry #${prev.length + 1}`]);
     }, 200);
-    return () => clearInterval(interval);
+    return () => clearInterval(id);
   }, []);
 
-  return (
-    <Box flexDirection="column">
-      <Text dimColor>{logs.length} entries</Text>
-      <ScrollableBox height={15} lines={logs} followOutput border />
-    </Box>
-  );
+  return <ScrollableBox height={15} lines={logs} followOutput autoFocus border />;
 }
 
 render(<App />);
 ```
 
-## useScrollable Hook
-
-Use the standalone hook to build a fully custom scroll UI:
+### Multi-Pane (Tab focus)
 
 ```tsx
-import React from 'react';
-import {render, Box, Text} from 'ink';
-import {useScrollable} from 'ink-scrollable-box';
-
-const data = Array.from({length: 50}, (_, i) => `Record ${i + 1}`);
-
-function App() {
-  const scroll = useScrollable({
-    contentHeight: data.length,
-    viewportHeight: 10,
-    scrollStep: 3,
-  });
-
-  const visible = data.slice(scroll.offset, scroll.offset + 10);
-
-  return (
-    <Box flexDirection="column">
-      <Text dimColor>
-        Offset: {scroll.offset} | {scroll.percentage}% |{' '}
-        {scroll.isAtTop ? 'TOP' : scroll.isAtBottom ? 'BOTTOM' : 'MIDDLE'}
-      </Text>
-      <Box flexDirection="column" borderStyle="round" borderColor="gray">
-        {visible.map((line, i) => (
-          <Text key={scroll.offset + i}>{line}</Text>
-        ))}
-      </Box>
-    </Box>
-  );
-}
-
-render(<App />);
-```
-
-## Multi-Pane
-
-Use `id` to identify panes and Tab to cycle focus between them:
-
-```tsx
-import React from 'react';
 import {render, Box, Text} from 'ink';
 import {ScrollableBox} from 'ink-scrollable-box';
 
-const leftLines = Array.from({length: 30}, (_, i) => `Left-${i + 1}`);
-const rightLines = Array.from({length: 50}, (_, i) => `Right-${i + 1}`);
+const left = Array.from({length: 30}, (_, i) => `Left-${i + 1}`);
+const right = Array.from({length: 50}, (_, i) => `Right-${i + 1}`);
+
+render(
+  <Box flexDirection="row" gap={2}>
+    <ScrollableBox height={10} lines={left} border id="left" autoFocus />
+    <ScrollableBox height={10} lines={right} border id="right" />
+  </Box>
+);
+```
+
+### Controlled Mode
+
+```tsx
+import {useState} from 'react';
+import {render} from 'ink';
+import {ScrollableBox} from 'ink-scrollable-box';
+
+const lines = Array.from({length: 100}, (_, i) => `Item ${i + 1}`);
 
 function App() {
+  const [offset, setOffset] = useState(0);
+  return <ScrollableBox height={10} lines={lines} offset={offset} onOffsetChange={setOffset} autoFocus />;
+}
+
+render(<App />);
+```
+
+### Ref API (programmatic scrolling)
+
+```tsx
+import {useRef} from 'react';
+import {render, Box, Text} from 'ink';
+import {ScrollableBox, ScrollableBoxRef} from 'ink-scrollable-box';
+
+const lines = Array.from({length: 100}, (_, i) => `Item ${i + 1}`);
+
+function App() {
+  const ref = useRef<ScrollableBoxRef>(null);
+  // Call ref.current.scrollToIndex(50, {align: 'center'}) to jump to item 50
+  return <ScrollableBox ref={ref} height={10} lines={lines} autoFocus border />;
+}
+
+render(<App />);
+```
+
+### Linked Scroll (useLinkedScroll)
+
+Synchronize scroll position across multiple panes:
+
+```tsx
+import {render, Box} from 'ink';
+import {ScrollableBox, useLinkedScroll} from 'ink-scrollable-box';
+
+const left = Array.from({length: 100}, (_, i) => `Left-${i + 1}`);
+const right = Array.from({length: 100}, (_, i) => `Right-${i + 1}`);
+
+function App() {
+  const linked = useLinkedScroll({mode: 'absolute'});
   return (
     <Box flexDirection="row" gap={2}>
-      <Box flexDirection="column">
-        <Text dimColor>Panel A</Text>
-        <ScrollableBox height={10} lines={leftLines} border id="left" />
-      </Box>
-      <Box flexDirection="column">
-        <Text dimColor>Panel B</Text>
-        <ScrollableBox height={10} lines={rightLines} border id="right" />
-      </Box>
+      <ScrollableBox height={10} lines={left} offset={linked.offset} onOffsetChange={linked.onOffsetChange} autoFocus border />
+      <ScrollableBox height={10} lines={right} offset={linked.offset} onOffsetChange={linked.onOffsetChange} border />
     </Box>
   );
+}
+
+render(<App />);
+```
+
+### Infinite Scroll (onReachEnd)
+
+```tsx
+import {useState, useCallback} from 'react';
+import {render} from 'ink';
+import {ScrollableBox} from 'ink-scrollable-box';
+
+function App() {
+  const [lines, setLines] = useState(Array.from({length: 50}, (_, i) => `Item ${i + 1}`));
+  const loadMore = useCallback(() => {
+    setLines(prev => [...prev, ...Array.from({length: 20}, (_, i) => `Item ${prev.length + i + 1}`)]);
+  }, []);
+
+  return <ScrollableBox height={15} lines={lines} onReachEnd={loadMore} reachThreshold={5} autoFocus border />;
 }
 
 render(<App />);
@@ -177,53 +208,98 @@ render(<App />);
 
 ### `<ScrollableBox />`
 
+#### Core Props
+
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `height` | `number` | required | Visible row count of the viewport |
-| `lines` | `string[]` | — | Content in lines mode |
-| `children` | `ReactNode` | — | Content in children mode |
+| `height` | `number` | **required** | Viewport height in terminal lines |
+| `lines` | `string[]` | -- | String content (mutually exclusive with `children`) |
+| `children` | `ReactNode` | -- | React node content (mutually exclusive with `lines`) |
 | `followOutput` | `boolean` | `false` | Auto-scroll to bottom when content grows |
-| `scrollStep` | `number` | `1` | Rows moved per j/k or arrow key press |
-| `border` | `boolean` | `false` | Render a rounded border around the box |
-| `showScrollbar` | `boolean` | `true` | Show the proportional scrollbar |
-| `showIndicators` | `boolean` | `true` | Show ▲/▼ overflow indicators |
-| `focusable` | `boolean` | `true` | Allow keyboard focus via Tab |
-| `id` | `string` | — | Focus id for multi-pane Tab cycling |
-| `onScroll` | `(state: ScrollState) => void` | — | Called on every scroll position change |
-| `scrollbarCharacter` | `string` | `█` | Character for the scrollbar thumb |
-| `trackCharacter` | `string` | `░` | Character for the scrollbar track |
-| `upIndicator` | `string` | `▲` | Character for the top overflow indicator |
-| `downIndicator` | `string` | `▼` | Character for the bottom overflow indicator |
-| `scrollbarColor` | `string` | — | Color of the scrollbar thumb |
-| `scrollbarDimColor` | `string` | — | Dim color of the scrollbar thumb |
-| `trackColor` | `string` | — | Color of the scrollbar track |
-| `borderColor` | `string` | — | Border color when focused |
-| `borderDimColor` | `string` | `gray` | Border color when unfocused |
-| `enableVimBindings` | `boolean` | `true` | Toggle vim-style keybindings (j/k/g/G/u/d) |
-| `onFocus` | `() => void` | — | Called when the component gains focus |
-| `onBlur` | `() => void` | — | Called when the component loses focus |
+| `scrollStep` | `number` | `1` | Lines per arrow key / j/k press |
+| `border` | `boolean` | `false` | Render a rounded border around the viewport |
 | `overscan` | `number` | `0` | Extra items to pre-render above/below viewport |
-| `offset` | `number` | — | Controlled scroll offset (makes component controlled) |
-| `onOffsetChange` | `(offset: number) => void` | — | Called when offset changes in controlled mode |
-| `measureChildren` | `boolean` | `false` | Enable measurement of multi-line children heights |
-| `mouseWheel` | `boolean` | `false` | Reserved for future mouse wheel support |
-| `mouseWheelLines` | `number` | `3` | Lines per mouse wheel tick (reserved) |
+| `measureChildren` | `boolean` | `false` | Measure actual heights of multi-line children (O(n) render) |
+| `debug` | `boolean` | `false` | Disable overflow clipping for layout debugging |
+
+#### Scrollbar Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `showScrollbar` | `boolean` | `true` | Show the proportional scrollbar |
+| `showIndicators` | `boolean` | `true` | Show overflow indicators above/below content |
+| `scrollbarStyle` | `'block' \| 'line' \| 'thick' \| 'dots'` | `'block'` | Built-in scrollbar visual style |
+| `scrollbarCharacter` | `string` | per style | Override the scrollbar thumb character |
+| `trackCharacter` | `string` | per style | Override the scrollbar track character |
+| `upIndicator` | `string` | `▲` | Top overflow indicator character |
+| `downIndicator` | `string` | `▼` | Bottom overflow indicator character |
+| `scrollbarColor` | `string` | -- | Thumb color when focused |
+| `scrollbarDimColor` | `string` | -- | Thumb color when unfocused |
+| `trackColor` | `string` | -- | Track color |
+
+#### Focus and Keyboard Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `focusable` | `boolean` | `true` | Participate in Tab focus cycle |
+| `autoFocus` | `boolean` | `false` | Auto-focus on mount |
+| `id` | `string` | -- | Focus ID for programmatic focus / multi-pane |
+| `enableVimBindings` | `boolean` | `true` | Enable vim-style keys (j/k/g/G/u/d) |
+
+#### Border Styling Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `borderColor` | `string` | `'blue'` | Border color when focused |
+| `borderDimColor` | `string` | `'gray'` | Border color when unfocused |
+
+#### Callback Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `onScroll` | `(state: ScrollState) => void` | -- | Called on every scroll position change |
+| `onFocus` | `() => void` | -- | Called when the component gains focus |
+| `onBlur` | `() => void` | -- | Called when the component loses focus |
+| `onContentHeightChange` | `(height: number, previousHeight: number) => void` | -- | Called when total content height changes |
+| `onViewportSizeChange` | `(height: number, previousHeight: number) => void` | -- | Called when viewport height changes |
+| `onItemHeightChange` | `(index: number, height: number, previousHeight: number) => void` | -- | Called when a measured child's height changes (requires `measureChildren`) |
+| `onReachEnd` | `() => void` | -- | Called when scroll is within `reachThreshold` of the bottom |
+| `onReachStart` | `() => void` | -- | Called when scroll is within `reachThreshold` of the top |
+| `reachThreshold` | `number` | `5` | Lines from edge to trigger `onReachEnd` / `onReachStart` |
+
+#### Controlled Mode Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `offset` | `number` | -- | Controlled scroll offset (makes the component controlled) |
+| `onOffsetChange` | `(offset: number) => void` | -- | Called when offset changes in controlled mode |
+
+#### Reserved Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `mouseWheel` | `boolean` | `false` | Reserved for future mouse wheel support (currently a no-op) |
+| `mouseWheelLines` | `number` | `3` | Lines per mouse wheel tick (currently a no-op) |
+
+---
 
 ### `useScrollable(options)`
+
+Standalone scroll state hook. Use this to build a fully custom scroll UI.
 
 **Options:**
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `contentHeight` | `number` | required | Total number of content rows |
-| `viewportHeight` | `number` | required | Visible row count |
+| `contentHeight` | `number` | **required** | Total number of content rows |
+| `viewportHeight` | `number` | **required** | Visible row count |
 | `scrollStep` | `number` | `1` | Rows per scroll action |
 | `followOutput` | `boolean` | `false` | Auto-scroll when content grows |
 | `initialOffset` | `number` | `0` | Starting scroll position |
-| `controlledOffset` | `number` | — | External controlled offset (overrides internal state) |
-| `onOffsetChange` | `(offset: number) => void` | — | Called when offset would change (for controlled mode) |
+| `controlledOffset` | `number` | -- | External controlled offset (overrides internal state) |
+| `onOffsetChange` | `(offset: number) => void` | -- | Called when offset would change (for controlled mode) |
 
-**Returns (`UseScrollableResult`):**
+**Returns (`UseScrollableResult = ScrollState & ScrollActions`):**
 
 | Field | Type | Description |
 |-------|------|-------------|
@@ -234,7 +310,7 @@ render(<App />);
 | `canScrollDown` | `boolean` | True when not at bottom |
 | `isAtTop` | `boolean` | True when at first row |
 | `isAtBottom` | `boolean` | True when at last row |
-| `percentage` | `number` | Scroll position 0–100 |
+| `percentage` | `number` | Scroll position 0--100 |
 | `scrollUp()` | `() => void` | Scroll up by `scrollStep` |
 | `scrollDown()` | `() => void` | Scroll down by `scrollStep` |
 | `scrollTo(n)` | `(n: number) => void` | Jump to absolute offset |
@@ -245,30 +321,73 @@ render(<App />);
 | `halfPageUp()` | `() => void` | Scroll up half a page |
 | `halfPageDown()` | `() => void` | Scroll down half a page |
 
+---
+
+### `useScrollableInput(options)`
+
+Wires Ink's `useInput` to a `UseScrollableResult`. Used internally by `ScrollableBox` but exported for custom UIs.
+
+**Options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `scroll` | `UseScrollableResult` | **required** | The scroll state object from `useScrollable` |
+| `focusable` | `boolean` | `true` | Participate in Tab focus cycle |
+| `autoFocus` | `boolean` | `false` | Auto-focus on mount |
+| `id` | `string` | -- | Focus ID for programmatic focus |
+| `enableVimBindings` | `boolean` | `true` | Enable vim-style keys |
+
+**Returns:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `isFocused` | `boolean` | Whether the component currently has focus |
+
+---
+
+### `useLinkedScroll(options?)`
+
+Synchronize scroll position across multiple `ScrollableBox` instances.
+
+**Options:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `mode` | `'absolute' \| 'proportional'` | `'absolute'` | `absolute` = same line offset, `proportional` = same percentage |
+| `initialOffset` | `number` | `0` | Starting offset |
+
+**Returns:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `offset` | `number` | Shared scroll offset |
+| `onOffsetChange` | `(offset: number) => void` | Spread onto each `ScrollableBox` |
+| `mode` | `'absolute' \| 'proportional'` | The active sync mode |
+
+---
+
+### `<Scrollbar />`
+
+Standalone scrollbar component. Used internally but exported for custom layouts.
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `offset` | `number` | **required** | Current scroll offset |
+| `contentHeight` | `number` | **required** | Total content rows |
+| `viewportHeight` | `number` | **required** | Visible rows |
+| `isFocused` | `boolean` | **required** | Whether the parent is focused (affects color) |
+| `scrollbarStyle` | `'block' \| 'line' \| 'thick' \| 'dots'` | `'block'` | Built-in visual style |
+| `thumbCharacter` | `string` | per style | Override thumb character |
+| `trackCharacter` | `string` | per style | Override track character |
+| `thumbColor` | `string` | -- | Thumb color when focused |
+| `thumbDimColor` | `string` | -- | Thumb color when unfocused |
+| `trackColor` | `string` | -- | Track color |
+
+---
+
 ### `ScrollableBoxRef`
 
-Use a ref to control scrolling programmatically from a parent component:
-
-```tsx
-import {useRef} from 'react';
-import {ScrollableBox, ScrollableBoxRef} from 'ink-scrollable-box';
-
-const ref = useRef<ScrollableBoxRef>(null);
-<ScrollableBox ref={ref} height={10} lines={lines} />
-
-// Methods available on ref:
-ref.current.scrollTo(offset)
-ref.current.scrollToTop()
-ref.current.scrollToBottom()
-ref.current.scrollUp()
-ref.current.scrollDown()
-ref.current.pageUp()
-ref.current.pageDown()
-ref.current.halfPageUp()
-ref.current.halfPageDown()
-ref.current.scrollToIndex(5, {align: 'center'})
-ref.current.getScrollState()
-```
+All methods available on a ref obtained via `useRef<ScrollableBoxRef>()`.
 
 | Method | Description |
 |--------|-------------|
@@ -281,146 +400,66 @@ ref.current.getScrollState()
 | `pageDown()` | Scroll down by one viewport height |
 | `halfPageUp()` | Scroll up by half viewport height |
 | `halfPageDown()` | Scroll down by half viewport height |
-| `scrollToIndex(index, options?)` | Scroll to a specific item index with optional `{align: 'start' \| 'center' \| 'end'}` |
+| `scrollToIndex(index, options?)` | Scroll to a specific item index with optional `{align: 'start' \| 'center' \| 'end' \| 'auto'}` |
 | `getScrollState()` | Returns the current `ScrollState` object |
-
-### `<Scrollbar />`
-
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `offset` | `number` | required | Current scroll offset |
-| `contentHeight` | `number` | required | Total content rows |
-| `viewportHeight` | `number` | required | Visible rows |
-| `scrollbarCharacter` | `string` | `█` | Thumb character |
-| `trackCharacter` | `string` | `░` | Track character |
-| `scrollbarColor` | `string` | — | Thumb color |
-| `scrollbarDimColor` | `string` | — | Thumb dim color |
-| `trackColor` | `string` | — | Track color |
+| `getItemHeight(index)` | Get the height of a child in terminal lines (returns 1 in non-measure mode) |
+| `getItemPosition(index)` | Get `{top, height}` of a child, or `undefined` if out of range |
+| `remeasureItem(index)` | Force re-measurement of a child (requires `measureChildren`) |
 
 ## Keyboard Shortcuts
 
 | Key | Action |
 |-----|--------|
-| ↑ / k | Scroll up |
-| ↓ / j | Scroll down |
+| Up / k | Scroll up |
+| Down / j | Scroll down |
 | g | Jump to top |
-| G (shift+g) | Jump to bottom |
+| G (Shift+G) | Jump to bottom |
 | Page Up / u | Scroll up one page |
 | Page Down / d | Scroll down one page |
 | Ctrl+U | Scroll up half page |
 | Ctrl+D | Scroll down half page |
 | Home | Jump to top |
 | End | Jump to bottom |
+| Tab | Move focus to next pane |
 
-Keys are only active when the component has focus. Use Tab to move focus between panes.
+Vim bindings (j, k, g, G, u, d) can be disabled with `enableVimBindings={false}`. Arrow keys, Page Up/Down, Home/End, and Ctrl+U/D are always active when focused.
 
-## Controlled Mode
+## Scrollbar Styles
 
-Pass `offset` and `onOffsetChange` to manage scroll position externally:
+Set `scrollbarStyle` to change the built-in look:
 
-```tsx
-import React, {useState} from 'react';
-import {ScrollableBox} from 'ink-scrollable-box';
+| Style | Thumb | Track |
+|-------|-------|-------|
+| `block` (default) | `█` | `░` |
+| `line` | `│` | ` ` (space) |
+| `thick` | `┃` | `╏` |
+| `dots` | `●` | `·` |
 
-const lines = Array.from({length: 100}, (_, i) => `Item ${i + 1}`);
-
-function App() {
-  const [offset, setOffset] = useState(0);
-  return <ScrollableBox height={10} lines={lines} offset={offset} onOffsetChange={setOffset} />;
-}
-```
-
-## Ref API
-
-Use a ref for programmatic scroll control from a parent component:
-
-```tsx
-import React, {useRef} from 'react';
-import {render, Box, Text} from 'ink';
-import {ScrollableBox, ScrollableBoxRef} from 'ink-scrollable-box';
-
-const lines = Array.from({length: 100}, (_, i) => `Item ${i + 1}`);
-
-function App() {
-  const ref = useRef<ScrollableBoxRef>(null);
-
-  return (
-    <Box flexDirection="column">
-      <ScrollableBox ref={ref} height={10} lines={lines} border />
-      <Text dimColor>Use ref.current.scrollToIndex(50) to jump to item 50</Text>
-    </Box>
-  );
-}
-
-render(<App />);
-```
-
-## Variable-Height Children
-
-By default, each child is assumed to render as exactly 1 terminal line. If your children span multiple lines (e.g., wrapped text), set `measureChildren` to enable accurate scroll math:
-
-```tsx
-<ScrollableBox height={10} measureChildren>
-  <Text>This is a short line</Text>
-  <Text wrap="wrap">
-    This is a much longer line that will wrap across multiple terminal rows,
-    which would normally cause scroll math to be incorrect.
-  </Text>
-</ScrollableBox>
-```
-
-When `measureChildren` is `true`, all children are rendered and measured (O(n) rendering). When `false` (the default), only visible children are rendered (O(viewport) rendering). Use `lines` mode for the best performance with large datasets.
-
-## Customization
-
-**Custom scrollbar characters and colors:**
-
-```tsx
-<ScrollableBox
-  height={20}
-  lines={lines}
-  scrollbarCharacter="▐"
-  trackCharacter="│"
-  scrollbarColor="cyan"
-  trackColor="gray"
-/>
-```
-
-**Border styling:**
-
-```tsx
-<ScrollableBox
-  height={20}
-  lines={lines}
-  border
-  borderColor="blue"
-  borderDimColor="gray"
-/>
-```
-
-**Disable scrollbar or indicators:**
-
-```tsx
-<ScrollableBox height={20} lines={lines} showScrollbar={false} showIndicators={false} />
-```
+The `block` style uses half-line precision rendering (▀/▄ characters) for smoother positioning. Override individual characters with `scrollbarCharacter` and `trackCharacter`.
 
 ## How It Works
 
-`ScrollableBox` slices the content array to render only the rows visible in the viewport (`lines.slice(offset, offset + height)`). This gives O(viewport) render cost regardless of content size — a list of 100,000 lines renders the same as a list of 100.
+**Lines mode** slices the content array to render only visible rows (`lines.slice(offset, offset + height)`). Render cost is O(viewport) regardless of content size -- 100,000 lines renders the same as 100.
 
-The `useScrollable` hook manages offset state and exposes action functions. `useScrollableInput` wires Ink's `useInput` to those actions and is used internally by `ScrollableBox`, but is also exported for custom keyboard handling.
+**Children mode** renders only the visible subset of React children. When `measureChildren` is enabled, all children are rendered and measured for accurate scroll math with multi-line content (O(n) rendering).
+
+The `useScrollable` hook manages offset state and exposes scroll actions. `useScrollableInput` wires Ink's `useInput` to those actions. `ScrollableBox` composes both internally.
 
 ## Comparison with Alternatives
 
 | Feature | ink-scrollable-box | ink-scroll-view | ink-scrollbar |
 |---------|--------------------|-----------------|---------------|
-| Keyboard navigation | ✅ vim + arrows + Page | ❌ | ❌ |
-| Focus management | ✅ Tab cycling | ❌ | ❌ |
-| followOutput | ✅ | ❌ | ❌ |
-| Dual content modes | ✅ lines + children | ❌ children only | N/A |
-| Standalone hook | ✅ useScrollable | ❌ | ❌ |
-| TypeScript | ✅ first-class | ✅ | ✅ |
-| Custom theming | ✅ characters + colors | ❌ | Partial |
+| Keyboard navigation | vim + arrows + Page + Home/End | -- | -- |
+| Focus management | Tab cycling + autoFocus | -- | -- |
+| followOutput | yes | -- | -- |
+| Dual content modes | lines + children | children only | N/A |
+| Scrollbar styles | 4 built-in + custom | -- | partial |
+| Controlled mode | yes | -- | -- |
+| Linked scroll | useLinkedScroll hook | -- | -- |
+| Infinite scroll | onReachEnd / onReachStart | -- | -- |
+| Standalone hooks | useScrollable, useScrollableInput | -- | -- |
+| Ref API | scrollToIndex, getItemHeight, etc. | -- | -- |
+| TypeScript | first-class | yes | yes |
 | Dependencies | 0 (peer only) | 18 | 3 |
 
 ## Contributing
