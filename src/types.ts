@@ -192,6 +192,8 @@ export type ScrollableBoxProps = {
    * (O(viewport) rendering). Default: false.
    */
   measureChildren?: boolean;
+  /** Position of the scrollbar. 'inside' renders alongside content within the border, 'outside' renders to the right of the border. Default: 'inside'. */
+  scrollbarPosition?: 'inside' | 'outside';
   /** Disable overflow clipping for layout debugging (default: false) */
   debug?: boolean;
   /** Called when total content height changes */

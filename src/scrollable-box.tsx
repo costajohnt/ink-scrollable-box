@@ -192,6 +192,7 @@ function useContentHeight(
 	return measureChildren ? measuredHeight : childrenLength;
 }
 
+// eslint-disable-next-line complexity
 function ScrollableBoxRender(
 	props: ScrollableBoxProps,
 	ref: React.ForwardedRef<ScrollableBoxRef>,
@@ -233,6 +234,7 @@ function ScrollableBoxRender(
 		onReachEnd,
 		onReachStart,
 		reachThreshold,
+		scrollbarPosition,
 	} = resolveProps(props);
 
 	validateProps(height, lines, children);
@@ -310,17 +312,42 @@ function ScrollableBoxRender(
 		reachThreshold,
 	});
 
-	const showBar = showScrollbar && contentHeight > effectiveHeight;
 	const hasOverflow = contentHeight > effectiveHeight;
+	const showBar = showScrollbar && hasOverflow;
+	const isOutside = scrollbarPosition === 'outside';
+	const activeBorderColor = isFocused ? (borderColor ?? 'blue') : borderDimColor;
 
-	const activeBorderColor = isFocused
-		? (borderColor ?? 'blue')
-		: borderDimColor;
+	const scrollbarElement = showBar
+		? (
+			<Scrollbar
+				contentHeight={contentHeight}
+				viewportHeight={effectiveHeight}
+				offset={scroll.offset}
+				isFocused={isFocused}
+				scrollbarStyle={scrollbarStyle}
+				thumbCharacter={scrollbarCharacter}
+				trackCharacter={trackCharacter}
+				thumbColor={scrollbarColor}
+				thumbDimColor={scrollbarDimColor}
+				trackColor={trackColor}
+			/>
+		)
+		: null;
 
-	return (
+	const indicators = showIndicators && hasOverflow
+		? (
+			<Box justifyContent='space-between'>
+				<Text dimColor>{scroll.canScrollUp ? upIndicator : ' '}</Text>
+				<Text dimColor>{scroll.canScrollDown ? downIndicator : ' '}</Text>
+			</Box>
+		)
+		: null;
+
+	const contentBox = (
 		<Box
 			flexDirection='column'
-			width={width}
+			width={isOutside ? undefined : width}
+			flexGrow={isOutside ? 1 : undefined}
 			borderStyle={border ? 'round' : undefined}
 			borderColor={border ? activeBorderColor : undefined}
 		>
@@ -341,33 +368,28 @@ function ScrollableBoxRender(
 						onItemMeasure={onItemMeasure}
 					/>
 				</Box>
-				{showBar
+				{isOutside ? null : scrollbarElement}
+			</Box>
+			{indicators}
+		</Box>
+	);
+
+	if (isOutside) {
+		return (
+			<Box flexDirection='row' width={width}>
+				{contentBox}
+				{scrollbarElement
 					? (
-						<Scrollbar
-							contentHeight={contentHeight}
-							viewportHeight={effectiveHeight}
-							offset={scroll.offset}
-							isFocused={isFocused}
-							scrollbarStyle={scrollbarStyle}
-							thumbCharacter={scrollbarCharacter}
-							trackCharacter={trackCharacter}
-							thumbColor={scrollbarColor}
-							thumbDimColor={scrollbarDimColor}
-							trackColor={trackColor}
-						/>
+						<Box flexDirection='column' paddingTop={border ? 1 : 0} paddingBottom={border ? 1 : 0}>
+							{scrollbarElement}
+						</Box>
 					)
 					: null}
 			</Box>
-			{showIndicators && hasOverflow
-				? (
-					<Box justifyContent='space-between'>
-						<Text dimColor>{scroll.canScrollUp ? upIndicator : ' '}</Text>
-						<Text dimColor>{scroll.canScrollDown ? downIndicator : ' '}</Text>
-					</Box>
-				)
-				: null}
-		</Box>
-	);
+		);
+	}
+
+	return contentBox;
 }
 
 export const ScrollableBox = forwardRef<ScrollableBoxRef, ScrollableBoxProps>(ScrollableBoxRender);

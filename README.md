@@ -228,6 +228,7 @@ render(<App />);
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
 | `showScrollbar` | `boolean` | `true` | Show the proportional scrollbar |
+| `scrollbarPosition` | `'inside' \| 'outside'` | `'inside'` | `inside` renders the scrollbar alongside content within the border; `outside` renders it to the right of the border, saving 1 column of content width |
 | `showIndicators` | `boolean` | `true` | Show overflow indicators above/below content |
 | `scrollbarStyle` | `'block' \| 'line' \| 'thick' \| 'dots'` | `'block'` | Built-in scrollbar visual style |
 | `scrollbarCharacter` | `string` | per style | Override the scrollbar thumb character |

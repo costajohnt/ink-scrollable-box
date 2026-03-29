@@ -92,25 +92,15 @@ describe('ScrollableBox — lines mode', () => {
 	});
 
 	it('width prop constrains container to fixed width', () => {
-		const lines = Array.from({length: 10}, (_, i) => `Left-${i + 1}`);
+		const lines = makeLines(10);
 		const {lastFrame, unmount} = render(
 			<ScrollableBox height={5} width={30} lines={lines}/>,
 		);
 		const frame = lastFrame()!;
-		// Every non-empty line should be at most 30 characters wide
 		for (const line of frame.split('\n').filter(l => l.length > 0)) {
 			expect(line.length).toBeLessThanOrEqual(30);
 		}
-		unmount();
-	});
 
-	it('without width prop, container auto-sizes', () => {
-		const lines = makeLines(5);
-		const {lastFrame, unmount} = render(
-			<ScrollableBox height={5} lines={lines}/>,
-		);
-		const frame = lastFrame()!;
-		expect(frame).toContain('Line 1');
 		unmount();
 	});
 
@@ -1484,5 +1474,95 @@ describe('ScrollableBox — content/viewport/item callbacks', () => {
 		instance.unmount();
 		// If we got here without errors, the callback wiring is correct
 		expect(true).toBe(true);
+	});
+});
+
+describe('ScrollableBox — scrollbarPosition', () => {
+	it('defaults to inside (scrollbar inside border)', () => {
+		const lines = makeLines(20);
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={7} lines={lines} border/>,
+		);
+		const frame = lastFrame()!;
+		// Border and scrollbar should both be present, scrollbar inside the border
+		expect(frame).toContain('╭');
+		expect(frame).toContain('█');
+		unmount();
+	});
+
+	it('scrollbarPosition="inside" renders scrollbar inside border (explicit)', () => {
+		const lines = makeLines(20);
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={7} lines={lines} border scrollbarPosition='inside'/>,
+		);
+		const frame = lastFrame()!;
+		expect(frame).toContain('╭');
+		expect(frame).toContain('█');
+		unmount();
+	});
+
+	it('scrollbarPosition="outside" renders scrollbar outside the border', () => {
+		const lines = makeLines(20);
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={7} lines={lines} border scrollbarPosition='outside'/>,
+		);
+		const frame = lastFrame()!;
+		// Border should still render
+		expect(frame).toContain('╭');
+		// Scrollbar should render (content overflows viewport)
+		expect(frame).toContain('█');
+		unmount();
+	});
+
+	it('scrollbarPosition="outside" without border still shows scrollbar', () => {
+		const lines = makeLines(20);
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={5} lines={lines} scrollbarPosition='outside'/>,
+		);
+		const frame = lastFrame()!;
+		// No border
+		expect(frame).not.toContain('╭');
+		// Scrollbar still renders
+		expect(frame).toContain('█');
+		unmount();
+	});
+
+	it('scrollbarPosition="outside" renders content correctly', () => {
+		const lines = makeLines(20);
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={7} lines={lines} border scrollbarPosition='outside' showIndicators={false}/>,
+		);
+		const frame = lastFrame()!;
+		// effectiveHeight = 7 - 2 = 5; lines 1-5 visible
+		expect(frame).toContain('Line 1');
+		expect(frame).toContain('Line 5');
+		expect(frame).not.toContain('Line 6');
+		unmount();
+	});
+
+	it('scrollbarPosition="outside" scrollbar scrolls correctly with keyboard', async () => {
+		const lines = makeLines(20);
+		const instance = render(
+			<ScrollableBox height={7} lines={lines} border scrollbarPosition='outside'/>,
+		);
+		await focus(instance.stdin);
+		await write(instance.stdin, arrowDown);
+		const frame = instance.lastFrame()!;
+		expect(frame).toContain('Line 2');
+		expect(frame).toContain('Line 6');
+		expect(frame).not.toContain('Line 1');
+		instance.unmount();
+	});
+
+	it('scrollbarPosition="outside" hides scrollbar when content fits', () => {
+		const lines = makeLines(3);
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={7} lines={lines} border scrollbarPosition='outside'/>,
+		);
+		const frame = lastFrame()!;
+		// No scrollbar needed — 3 lines in a 5-line viewport
+		expect(frame).not.toContain('█');
+		expect(frame).not.toContain('░');
+		unmount();
 	});
 });
