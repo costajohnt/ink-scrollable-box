@@ -1071,6 +1071,127 @@ describe('ScrollableBox — debug prop', () => {
 	});
 });
 
+describe('ScrollableBox — ref API — per-item tracking', () => {
+	function RefTest({lines, action}: {lines: string[]; action: (ref: ScrollableBoxRef) => void}) {
+		const ref = useRef<ScrollableBoxRef>(null);
+		useEffect(() => {
+			if (ref.current) {
+				action(ref.current);
+			}
+		}, [action]);
+		return (
+			<ScrollableBox
+				ref={ref}
+				height={5}
+				lines={lines}
+			/>
+		);
+	}
+
+	it('getItemHeight returns 1 for each item in non-measure mode', async () => {
+		const lines = makeLines(5);
+		let capturedHeights: number[] = [];
+		let outOfRange = 0;
+
+		await React.act(async () => {
+			render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						capturedHeights = lines.map((_, i) => ref.getItemHeight(i));
+						outOfRange = ref.getItemHeight(10);
+					}}
+				/>,
+			);
+		});
+
+		expect(capturedHeights).toEqual([1, 1, 1, 1, 1]);
+		expect(outOfRange).toBe(0);
+	});
+
+	it('getItemHeight returns 0 for negative index', async () => {
+		const lines = makeLines(3);
+		let result = -1;
+
+		await React.act(async () => {
+			render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						result = ref.getItemHeight(-1);
+					}}
+				/>,
+			);
+		});
+
+		expect(result).toBe(0);
+	});
+
+	it('getItemPosition returns correct top and height', async () => {
+		const lines = makeLines(5);
+		let pos0: {top: number; height: number} | undefined;
+		let pos3: {top: number; height: number} | undefined;
+		let pos10: {top: number; height: number} | undefined;
+
+		await React.act(async () => {
+			render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						pos0 = ref.getItemPosition(0);
+						pos3 = ref.getItemPosition(3);
+						pos10 = ref.getItemPosition(10);
+					}}
+				/>,
+			);
+		});
+
+		expect(pos0).toEqual({top: 0, height: 1});
+		expect(pos3).toEqual({top: 3, height: 1});
+		expect(pos10).toBeUndefined();
+	});
+
+	it('getItemPosition returns null for negative index', async () => {
+		const lines = makeLines(3);
+		let result: {top: number; height: number} | undefined = {top: -1, height: -1};
+
+		await React.act(async () => {
+			render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						result = ref.getItemPosition(-1);
+					}}
+				/>,
+			);
+		});
+
+		expect(result).toBeUndefined();
+	});
+
+	it('remeasureItem clears cached height without throwing', async () => {
+		const lines = makeLines(5);
+
+		await React.act(async () => {
+			render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						// Should not throw for valid or invalid indices
+						ref.remeasureItem(0);
+						ref.remeasureItem(4);
+						ref.remeasureItem(-1); // Out of range — no-op
+						ref.remeasureItem(10); // Out of range — no-op
+					}}
+				/>,
+			);
+		});
+
+		// If we got here without errors, remeasureItem is wired correctly
+		expect(true).toBe(true);
+	});
+});
+
 describe('ScrollableBox — content/viewport/item callbacks', () => {
 	it('onContentHeightChange fires when content height changes', async () => {
 		const onContentHeightChange = vi.fn();

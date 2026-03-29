@@ -92,6 +92,12 @@ export type ScrollableBoxRef = {
   scrollToIndex: (index: number, options?: {align?: 'start' | 'center' | 'end' | 'auto'}) => void;
   /** Get current scroll state */
   getScrollState: () => ScrollState;
+  /** Get the height of a specific child (in terminal lines). Returns 0 if index is out of range. In non-measure mode, returns 1. */
+  getItemHeight: (index: number) => number;
+  /** Get the position and height of a specific child. Returns undefined if index is out of range. */
+  getItemPosition: (index: number) => {top: number; height: number} | undefined;
+  /** Force re-measurement of a specific child. Only works in measureChildren mode. */
+  remeasureItem: (index: number) => void;
 };
 
 export type ScrollableBoxProps = {

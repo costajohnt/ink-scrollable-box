@@ -62,10 +62,17 @@ function computeScrollToIndex(
 	return index; // 'start'
 }
 
-function buildRefHandle(
-	scroll: UseScrollableResult,
-	effectiveHeight: number,
-): ScrollableBoxRef {
+type RefHandleContext = {
+	scroll: UseScrollableResult;
+	effectiveHeight: number;
+	heightsRef: React.RefObject<number[]>;
+	itemCount: number;
+	measureChildren: boolean;
+};
+
+function buildRefHandle(context: RefHandleContext): ScrollableBoxRef {
+	const {scroll, effectiveHeight, heightsRef, itemCount, measureChildren} = context;
+	const heights = heightsRef.current;
 	return {
 		scrollTo(offset: number) {
 			scroll.scrollTo(offset);
@@ -109,6 +116,32 @@ function buildRefHandle(
 				isAtBottom: scroll.isAtBottom,
 				percentage: scroll.percentage,
 			};
+		},
+		getItemHeight(index: number): number {
+			if (index < 0 || index >= itemCount) {
+				return 0;
+			}
+
+			return measureChildren ? (heights[index] ?? 1) : 1;
+		},
+		getItemPosition(index: number): {top: number; height: number} | undefined {
+			if (index < 0 || index >= itemCount) {
+				return undefined;
+			}
+
+			let top = 0;
+			for (let i = 0; i < index; i++) {
+				top += measureChildren ? (heights[i] ?? 1) : 1;
+			}
+
+			const height = measureChildren ? (heights[index] ?? 1) : 1;
+			return {top, height};
+		},
+		remeasureItem(index: number): void {
+			if (index >= 0 && index < itemCount) {
+				// Clear cached height — next MeasurableItem effect will re-measure
+				heightsRef.current[index] = 0;
+			}
 		},
 	};
 }
@@ -242,7 +275,14 @@ function ScrollableBoxRender(
 		onOffsetChange,
 	});
 
-	useImperativeHandle(ref, () => buildRefHandle(scroll, effectiveHeight), [scroll, effectiveHeight]);
+	const itemCount = lines ? lines.length : childrenArray.length;
+	useImperativeHandle(ref, () => buildRefHandle({
+		scroll,
+		effectiveHeight,
+		heightsRef,
+		itemCount,
+		measureChildren,
+	}), [scroll, effectiveHeight, itemCount, measureChildren]);
 
 	const {isFocused} = useScrollableInput({
 		scroll,
