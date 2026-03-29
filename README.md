@@ -199,6 +199,15 @@ render(<App />);
 | `trackColor` | `string` | — | Color of the scrollbar track |
 | `borderColor` | `string` | — | Border color when focused |
 | `borderDimColor` | `string` | `gray` | Border color when unfocused |
+| `enableVimBindings` | `boolean` | `true` | Toggle vim-style keybindings (j/k/g/G/u/d) |
+| `onFocus` | `() => void` | — | Called when the component gains focus |
+| `onBlur` | `() => void` | — | Called when the component loses focus |
+| `overscan` | `number` | `0` | Extra items to pre-render above/below viewport |
+| `offset` | `number` | — | Controlled scroll offset (makes component controlled) |
+| `onOffsetChange` | `(offset: number) => void` | — | Called when offset changes in controlled mode |
+| `measureChildren` | `boolean` | `false` | Enable measurement of multi-line children heights |
+| `mouseWheel` | `boolean` | `false` | Reserved for future mouse wheel support |
+| `mouseWheelLines` | `number` | `3` | Lines per mouse wheel tick (reserved) |
 
 ### `useScrollable(options)`
 
@@ -211,6 +220,8 @@ render(<App />);
 | `scrollStep` | `number` | `1` | Rows per scroll action |
 | `followOutput` | `boolean` | `false` | Auto-scroll when content grows |
 | `initialOffset` | `number` | `0` | Starting scroll position |
+| `controlledOffset` | `number` | — | External controlled offset (overrides internal state) |
+| `onOffsetChange` | `(offset: number) => void` | — | Called when offset would change (for controlled mode) |
 
 **Returns (`UseScrollableResult`):**
 
@@ -231,6 +242,47 @@ render(<App />);
 | `scrollToBottom()` | `() => void` | Jump to bottom |
 | `pageUp()` | `() => void` | Scroll up one full page |
 | `pageDown()` | `() => void` | Scroll down one full page |
+| `halfPageUp()` | `() => void` | Scroll up half a page |
+| `halfPageDown()` | `() => void` | Scroll down half a page |
+
+### `ScrollableBoxRef`
+
+Use a ref to control scrolling programmatically from a parent component:
+
+```tsx
+import {useRef} from 'react';
+import {ScrollableBox, ScrollableBoxRef} from 'ink-scrollable-box';
+
+const ref = useRef<ScrollableBoxRef>(null);
+<ScrollableBox ref={ref} height={10} lines={lines} />
+
+// Methods available on ref:
+ref.current.scrollTo(offset)
+ref.current.scrollToTop()
+ref.current.scrollToBottom()
+ref.current.scrollUp()
+ref.current.scrollDown()
+ref.current.pageUp()
+ref.current.pageDown()
+ref.current.halfPageUp()
+ref.current.halfPageDown()
+ref.current.scrollToIndex(5, {align: 'center'})
+ref.current.getScrollState()
+```
+
+| Method | Description |
+|--------|-------------|
+| `scrollTo(offset)` | Jump to a specific offset (clamped to valid range) |
+| `scrollToTop()` | Jump to the top |
+| `scrollToBottom()` | Jump to the bottom |
+| `scrollUp()` | Scroll up by `scrollStep` lines |
+| `scrollDown()` | Scroll down by `scrollStep` lines |
+| `pageUp()` | Scroll up by one viewport height |
+| `pageDown()` | Scroll down by one viewport height |
+| `halfPageUp()` | Scroll up by half viewport height |
+| `halfPageDown()` | Scroll down by half viewport height |
+| `scrollToIndex(index, options?)` | Scroll to a specific item index with optional `{align: 'start' \| 'center' \| 'end'}` |
+| `getScrollState()` | Returns the current `ScrollState` object |
 
 ### `<Scrollbar />`
 
@@ -255,8 +307,69 @@ render(<App />);
 | G (shift+g) | Jump to bottom |
 | Page Up / u | Scroll up one page |
 | Page Down / d | Scroll down one page |
+| Ctrl+U | Scroll up half page |
+| Ctrl+D | Scroll down half page |
+| Home | Jump to top |
+| End | Jump to bottom |
 
 Keys are only active when the component has focus. Use Tab to move focus between panes.
+
+## Controlled Mode
+
+Pass `offset` and `onOffsetChange` to manage scroll position externally:
+
+```tsx
+import React, {useState} from 'react';
+import {ScrollableBox} from 'ink-scrollable-box';
+
+const lines = Array.from({length: 100}, (_, i) => `Item ${i + 1}`);
+
+function App() {
+  const [offset, setOffset] = useState(0);
+  return <ScrollableBox height={10} lines={lines} offset={offset} onOffsetChange={setOffset} />;
+}
+```
+
+## Ref API
+
+Use a ref for programmatic scroll control from a parent component:
+
+```tsx
+import React, {useRef} from 'react';
+import {render, Box, Text} from 'ink';
+import {ScrollableBox, ScrollableBoxRef} from 'ink-scrollable-box';
+
+const lines = Array.from({length: 100}, (_, i) => `Item ${i + 1}`);
+
+function App() {
+  const ref = useRef<ScrollableBoxRef>(null);
+
+  return (
+    <Box flexDirection="column">
+      <ScrollableBox ref={ref} height={10} lines={lines} border />
+      <Text dimColor>Use ref.current.scrollToIndex(50) to jump to item 50</Text>
+    </Box>
+  );
+}
+
+render(<App />);
+```
+
+## Variable-Height Children
+
+By default, each child is assumed to render as exactly 1 terminal line. If your children span multiple lines (e.g., wrapped text), set `measureChildren` to enable accurate scroll math:
+
+```tsx
+<ScrollableBox height={10} measureChildren>
+  <Text>This is a short line</Text>
+  <Text wrap="wrap">
+    This is a much longer line that will wrap across multiple terminal rows,
+    which would normally cause scroll math to be incorrect.
+  </Text>
+</ScrollableBox>
+```
+
+When `measureChildren` is `true`, all children are rendered and measured (O(n) rendering). When `false` (the default), only visible children are rendered (O(viewport) rendering). Use `lines` mode for the best performance with large datasets.
 
 ## Customization
 

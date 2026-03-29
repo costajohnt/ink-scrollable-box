@@ -17,3 +17,12 @@ Initial release.
 - `onScroll` callback
 - TypeScript-first with full type exports
 - ESM + CJS dual output
+- Half-page navigation (Ctrl+U/Ctrl+D)
+- Home/End key support
+- Vim keybindings toggle (`enableVimBindings`)
+- Focus callbacks (`onFocus`/`onBlur`)
+- Ref API for programmatic scrolling (`scrollTo`, `scrollToIndex`, `getScrollState`, etc.)
+- Controlled mode (`offset`/`onOffsetChange`)
+- Overscan support for pre-rendering items above/below the viewport
+- Variable-height children measurement (`measureChildren`)
+- Proportional scroll position preservation on viewport resize
