@@ -236,6 +236,12 @@ describe('ScrollableBox — prop validation', () => {
 			renderFn({height: -1, lines: []}, null);
 		}).toThrow('`height` must be a positive integer');
 	});
+
+	it('throws for non-array lines', () => {
+		expect(() => {
+			renderFn({height: 5, lines: 'not an array'}, null);
+		}).toThrow('must be an array');
+	});
 });
 
 describe('ScrollableBox — border', () => {
@@ -543,6 +549,147 @@ describe('ScrollableBox — ref API', () => {
 		expect(frame).toContain('Line 6');
 		expect(frame).toContain('Line 10');
 		expect(frame).not.toContain('Line 5');
+		instance.unmount();
+	});
+
+	it('scrollUp() via ref scrolls up by one step', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						ref.scrollTo(5);
+						ref.scrollUp();
+					}}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// offset was 5, scrollUp decreases by 1 => offset 4, lines 5-9 visible
+		expect(frame).toContain('Line 5');
+		expect(frame).toContain('Line 9');
+		expect(frame).not.toMatch(/Line 4\b/);
+		instance.unmount();
+	});
+
+	it('scrollDown() via ref scrolls down by one step', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						ref.scrollDown();
+					}}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// offset was 0, scrollDown increases by 1 => offset 1, lines 2-6 visible
+		expect(frame).toContain('Line 2');
+		expect(frame).toContain('Line 6');
+		expect(frame).not.toContain('Line 1');
+		instance.unmount();
+	});
+
+	it('pageUp() via ref scrolls up by one viewport height', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						ref.scrollTo(10);
+						ref.pageUp();
+					}}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// offset was 10, pageUp decreases by viewportHeight (5) => offset 5, lines 6-10 visible
+		expect(frame).toContain('Line 6');
+		expect(frame).toContain('Line 10');
+		expect(frame).not.toMatch(/Line 5\b/);
+		instance.unmount();
+	});
+
+	it('pageDown() via ref scrolls down by one viewport height', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						ref.pageDown();
+					}}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// offset was 0, pageDown increases by viewportHeight (5) => offset 5, lines 6-10 visible
+		expect(frame).toContain('Line 6');
+		expect(frame).toContain('Line 10');
+		expect(frame).not.toMatch(/Line 5\b/);
+		instance.unmount();
+	});
+
+	it('halfPageUp() via ref scrolls up by half viewport height', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						ref.scrollTo(10);
+						ref.halfPageUp();
+					}}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// offset was 10, halfPageUp decreases by floor(5/2)=2 => offset 8, lines 9-13 visible
+		expect(frame).toContain('Line 9');
+		expect(frame).toContain('Line 13');
+		expect(frame).not.toContain('Line 8');
+		instance.unmount();
+	});
+
+	it('halfPageDown() via ref scrolls down by half viewport height', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						ref.halfPageDown();
+					}}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// offset was 0, halfPageDown increases by floor(5/2)=2 => offset 2, lines 3-7 visible
+		expect(frame).toContain('Line 3');
+		expect(frame).toContain('Line 7');
+		expect(frame).not.toContain('Line 2');
 		instance.unmount();
 	});
 

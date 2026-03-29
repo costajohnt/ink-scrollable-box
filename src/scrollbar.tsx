@@ -1,4 +1,4 @@
-import React from 'react';
+import type {ReactNode} from 'react';
 import {Box, Text} from 'ink';
 import type {ScrollbarProps} from './types.js';
 
@@ -28,7 +28,7 @@ export function Scrollbar({
 			? 0
 			: Math.round((offset / maxScrollOffset) * maxThumbOffset);
 
-	const lines: React.ReactNode[] = [];
+	const lines: ReactNode[] = [];
 	for (let i = 0; i < viewportHeight; i++) {
 		const isThumb = i >= thumbOffset && i < thumbOffset + thumbHeight;
 		const character = isThumb ? thumbCharacter : trackCharacter;

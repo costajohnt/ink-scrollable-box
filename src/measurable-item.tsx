@@ -9,6 +9,9 @@ type MeasurableItemProps = {
 export function MeasurableItem({children, onMeasure}: MeasurableItemProps) {
   const ref = useRef<DOMElement>(null);
 
+  // Intentionally no dependency array — measure after every render because
+  // children may have changed size. onMeasure writes to a ref (not state),
+  // so the extra calls are inexpensive.
   useEffect(() => {
     if (ref.current) {
       const {height} = measureElement(ref.current);
