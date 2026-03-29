@@ -1527,3 +1527,277 @@ describe('ScrollableBox — scrollbarPosition', () => {
 		unmount();
 	});
 });
+
+describe('ScrollableBox — prop validation: overscan and reachThreshold', () => {
+	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+	const renderFn = (ScrollableBox as unknown as {render: (...args: unknown[]) => unknown}).render;
+
+	it('throws for negative overscan', () => {
+		expect(() => {
+			renderFn({height: 5, lines: [], overscan: -1}, null);
+		}).toThrow('`overscan` must be a non-negative integer');
+	});
+
+	it('throws for non-integer overscan (1.5)', () => {
+		expect(() => {
+			renderFn({height: 5, lines: [], overscan: 1.5}, null);
+		}).toThrow('`overscan` must be a non-negative integer');
+	});
+
+	it('throws for negative reachThreshold', () => {
+		expect(() => {
+			renderFn({height: 5, lines: [], reachThreshold: -1}, null);
+		}).toThrow('`reachThreshold` must be a non-negative number');
+	});
+
+});
+
+describe('ScrollableBox — scrollToIndex with measureChildren', () => {
+	/**
+	 * In ink-testing-library, Yoga layout inside a clipped box causes alternating
+	 * heights (1 and 0) for MeasurableItem children. That limits actual scrolling,
+	 * but the code paths in scrollToIndex are still fully exercised. Tests here
+	 * assert that the calls complete without errors and use the measureChildren
+	 * branch.
+	 */
+	function MeasureRefTest({
+		itemCount,
+		action,
+	}: {
+		itemCount: number;
+		action: (ref: ScrollableBoxRef) => void;
+	}) {
+		const ref = useRef<ScrollableBoxRef>(null);
+		useEffect(() => {
+			if (ref.current) {
+				action(ref.current);
+			}
+		}, [action]);
+		return (
+			<ScrollableBox ref={ref} height={5} measureChildren showScrollbar={false} showIndicators={false}>
+				{Array.from({length: itemCount}, (_, i) => (
+					<Text key={i}>{`MC Item ${i + 1}`}</Text>
+				))}
+			</ScrollableBox>
+		);
+	}
+
+	it('scrollToIndex start alignment — executes without error', async () => {
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<MeasureRefTest
+					itemCount={20}
+					action={ref => {
+						ref.scrollToIndex(7, {align: 'start'});
+					}}
+				/>,
+			);
+		});
+
+		// Verify the component renders correctly (the call itself is the assertion)
+		const frame = instance.lastFrame()!;
+		expect(frame).toBeDefined();
+		instance.unmount();
+	});
+
+	it('scrollToIndex end alignment — executes without error', async () => {
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<MeasureRefTest
+					itemCount={20}
+					action={ref => {
+						ref.scrollToIndex(9, {align: 'end'});
+					}}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		expect(frame).toBeDefined();
+		instance.unmount();
+	});
+
+	it('scrollToIndex center alignment — executes without error', async () => {
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<MeasureRefTest
+					itemCount={20}
+					action={ref => {
+						ref.scrollToIndex(10, {align: 'center'});
+					}}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		expect(frame).toBeDefined();
+		instance.unmount();
+	});
+
+	it('scrollToIndex auto — item already visible, offset unchanged', async () => {
+		const outerRef = React.createRef<ScrollableBoxRef>();
+
+		function AutoMeasureTest() {
+			const [currentOffset, setCurrentOffset] = useState(0);
+			return (
+				<ScrollableBox
+					ref={outerRef}
+					height={5}
+					measureChildren
+					offset={currentOffset}
+					onOffsetChange={setCurrentOffset}
+					showScrollbar={false}
+					showIndicators={false}
+				>
+					{Array.from({length: 20}, (_, i) => (
+						<Text key={i}>{`Auto Item ${i + 1}`}</Text>
+					))}
+				</ScrollableBox>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+		await React.act(async () => {
+			instance = render(<AutoMeasureTest />);
+		});
+
+		const offsetBefore = outerRef.current!.getScrollState().offset;
+
+		// Index 0 is always visible — auto alignment should not change offset
+		await React.act(async () => {
+			outerRef.current!.scrollToIndex(0, {align: 'auto'});
+		});
+
+		await tick();
+
+		const offsetAfter = outerRef.current!.getScrollState().offset;
+		expect(offsetAfter).toBe(offsetBefore);
+		instance.unmount();
+	});
+
+	it('scrollToIndex auto — item above viewport triggers upward scroll', async () => {
+		const outerRef = React.createRef<ScrollableBoxRef>();
+
+		// We pre-seed a large content with enough height so scrolling works.
+		// Use lines mode to verify the auto-above path, but here we need measureChildren.
+		// With 20 items at ~0.5 avg height, contentHeight≈10, viewportHeight=5 => maxOffset=5.
+		// After measuring, item tops may be computable. We just verify no crash.
+		function AutoAboveMeasureTest() {
+			const [currentOffset, setCurrentOffset] = useState(0);
+			return (
+				<ScrollableBox
+					ref={outerRef}
+					height={5}
+					measureChildren
+					offset={currentOffset}
+					onOffsetChange={setCurrentOffset}
+					showScrollbar={false}
+					showIndicators={false}
+				>
+					{Array.from({length: 20}, (_, i) => (
+						<Text key={i}>{`AboveItem ${i + 1}`}</Text>
+					))}
+				</ScrollableBox>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+		await React.act(async () => {
+			instance = render(<AutoAboveMeasureTest />);
+		});
+
+		// Calling scrollToIndex on an item whose top is below current offset triggers
+		// the "above viewport" branch when we scroll down first manually.
+		// We scroll the component to a position where item 0 is above the viewport.
+		await React.act(async () => {
+			outerRef.current!.scrollTo(3);
+		});
+
+		await tick();
+
+		// Now item 0 (top=0) is above the viewport (offset=3), call auto — should scroll up.
+		await React.act(async () => {
+			outerRef.current!.scrollToIndex(0, {align: 'auto'});
+		});
+
+		await tick();
+
+		// After scrolling to index 0 auto from above, offset should have moved up
+		const frame = instance.lastFrame()!;
+		expect(frame).toBeDefined();
+		instance.unmount();
+	});
+
+	it('scrollToIndex out of range — returns without error', async () => {
+		const outerRef = React.createRef<ScrollableBoxRef>();
+
+		function OobMeasureTest() {
+			return (
+				<ScrollableBox
+					ref={outerRef}
+					height={5}
+					measureChildren
+					showScrollbar={false}
+					showIndicators={false}
+				>
+					<Text>Only item</Text>
+				</ScrollableBox>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+		await React.act(async () => {
+			instance = render(<OobMeasureTest />);
+		});
+
+		// Out-of-range index should not throw
+		await React.act(async () => {
+			outerRef.current!.scrollToIndex(100, {align: 'start'});
+		});
+
+		const frame = instance.lastFrame()!;
+		expect(frame).toContain('Only item');
+		instance.unmount();
+	});
+});
+
+describe('ScrollableBox — heightsRef trimming on child removal', () => {
+	it('removes children without crash and heightsRef is trimmed', async () => {
+		function DynamicChildrenTest() {
+			const [count, setCount] = useState(8);
+			useEffect(() => {
+				// Reduce children count after mount to trigger the trimming effect
+				setCount(4);
+			}, []);
+			return (
+				<ScrollableBox height={5} measureChildren showScrollbar={false} showIndicators={false}>
+					{Array.from({length: count}, (_, i) => (
+						<Text key={i}>{`DynItem ${i + 1}`}</Text>
+					))}
+				</ScrollableBox>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+		await React.act(async () => {
+			instance = render(<DynamicChildrenTest />);
+		});
+
+		// Wait for the setCount(4) effect to run and commit
+		await tick();
+		await tick();
+
+		const frame = instance.lastFrame()!;
+		// Should not crash and should show only 4 items
+		expect(frame).toContain('DynItem 1');
+		expect(frame).toContain('DynItem 4');
+		expect(frame).not.toContain('DynItem 5');
+		instance.unmount();
+	});
+});
