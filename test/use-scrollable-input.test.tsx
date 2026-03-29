@@ -10,14 +10,21 @@ function ScrollableWithInput({
   viewportHeight,
   focusable = true,
   id,
+  enableVimBindings = true,
 }: {
   contentHeight: number;
   viewportHeight: number;
   focusable?: boolean;
   id?: string;
+  enableVimBindings?: boolean;
 }) {
   const scroll = useScrollable({contentHeight, viewportHeight});
-  useScrollableInput({scroll, focusable, id});
+  useScrollableInput({
+    scroll,
+    focusable,
+    id,
+    enableVimBindings,
+  });
   return (
     <Text>
       {JSON.stringify({
@@ -234,5 +241,100 @@ describe('useScrollableInput', () => {
     expect(state.offset).toBe(0);
     expect(state.isAtTop).toBe(true);
     instance.unmount();
+  });
+
+  it('Ctrl+D scrolls down by half a page', async () => {
+    const instance = render(
+      <ScrollableWithInput contentHeight={20} viewportHeight={10} />,
+    );
+    await focus(instance.stdin);
+    // Ctrl+D is \x04
+    await write(instance.stdin, '\x04');
+    // Math.floor(10 / 2) = 5
+    expect(getState(instance).offset).toBe(5);
+    instance.unmount();
+  });
+
+  it('Ctrl+U scrolls up by half a page', async () => {
+    const instance = render(
+      <ScrollableWithInput contentHeight={20} viewportHeight={10} />,
+    );
+    await focus(instance.stdin);
+    await write(instance.stdin, 'G'); // Go to bottom (offset 10)
+    // Ctrl+U is \x15
+    await write(instance.stdin, '\x15');
+    // 10 - Math.floor(10 / 2) = 5
+    expect(getState(instance).offset).toBe(5);
+    instance.unmount();
+  });
+
+  describe('enableVimBindings=false', () => {
+    it('j/k/g/G/u/d have no effect', async () => {
+      const instance = render(
+        <ScrollableWithInput contentHeight={20} viewportHeight={5} enableVimBindings={false} />,
+      );
+      await focus(instance.stdin);
+      await write(instance.stdin, 'j');
+      expect(getState(instance).offset).toBe(0);
+      await write(instance.stdin, 'k');
+      expect(getState(instance).offset).toBe(0);
+      await write(instance.stdin, 'G');
+      expect(getState(instance).offset).toBe(0);
+      await write(instance.stdin, 'g');
+      expect(getState(instance).offset).toBe(0);
+      await write(instance.stdin, 'd');
+      expect(getState(instance).offset).toBe(0);
+      await write(instance.stdin, 'u');
+      expect(getState(instance).offset).toBe(0);
+      instance.unmount();
+    });
+
+    it('arrow keys still work when vim bindings disabled', async () => {
+      const instance = render(
+        <ScrollableWithInput contentHeight={20} viewportHeight={5} enableVimBindings={false} />,
+      );
+      await focus(instance.stdin);
+      await write(instance.stdin, '\x1B[B'); // Arrow down
+      expect(getState(instance).offset).toBe(1);
+      await write(instance.stdin, '\x1B[A'); // Arrow up
+      expect(getState(instance).offset).toBe(0);
+      instance.unmount();
+    });
+
+    it('Ctrl+U/D still work when vim bindings disabled', async () => {
+      const instance = render(
+        <ScrollableWithInput contentHeight={20} viewportHeight={10} enableVimBindings={false} />,
+      );
+      await focus(instance.stdin);
+      await write(instance.stdin, '\x04'); // Ctrl+D
+      expect(getState(instance).offset).toBe(5);
+      await write(instance.stdin, '\x15'); // Ctrl+U
+      expect(getState(instance).offset).toBe(0);
+      instance.unmount();
+    });
+
+    it('Page Up/Down still work when vim bindings disabled', async () => {
+      const instance = render(
+        <ScrollableWithInput contentHeight={20} viewportHeight={5} enableVimBindings={false} />,
+      );
+      await focus(instance.stdin);
+      await write(instance.stdin, '\x1B[6~'); // Page Down
+      expect(getState(instance).offset).toBe(5);
+      await write(instance.stdin, '\x1B[5~'); // Page Up
+      expect(getState(instance).offset).toBe(0);
+      instance.unmount();
+    });
+
+    it('Home/End still work when vim bindings disabled', async () => {
+      const instance = render(
+        <ScrollableWithInput contentHeight={20} viewportHeight={5} enableVimBindings={false} />,
+      );
+      await focus(instance.stdin);
+      await write(instance.stdin, '\x1B[F'); // End
+      expect(getState(instance).isAtBottom).toBe(true);
+      await write(instance.stdin, '\x1B[H'); // Home
+      expect(getState(instance).isAtTop).toBe(true);
+      instance.unmount();
+    });
   });
 });

@@ -314,3 +314,74 @@ describe('ScrollableBox — onScroll callback', () => {
 		expect(scrollStates[0]!.offset).toBe(0);
 	});
 });
+
+describe('ScrollableBox — onFocus / onBlur callbacks', () => {
+	it('fires onFocus when component receives Tab focus', async () => {
+		const onFocusFn = vi.fn();
+		const lines = makeLines(20);
+		const instance = render(
+			<ScrollableBox height={5} lines={lines} onFocus={onFocusFn} />,
+		);
+
+		expect(onFocusFn).not.toHaveBeenCalled();
+		await focus(instance.stdin);
+		expect(onFocusFn).toHaveBeenCalledTimes(1);
+		instance.unmount();
+	});
+
+	it('fires onBlur when Tab moves focus away', async () => {
+		const onBlurFn = vi.fn();
+		const lines = makeLines(20);
+		// Render two focusable items so Tab can move focus away
+		let instance!: ReturnType<typeof render>;
+		await React.act(async () => {
+			instance = render(
+				<>
+					<ScrollableBox height={5} lines={lines} onBlur={onBlurFn} id='first' />
+					<ScrollableBox height={5} lines={lines} id='second' />
+				</>,
+			);
+		});
+
+		// Focus first component
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		expect(onBlurFn).not.toHaveBeenCalled();
+
+		// Tab to second component — first loses focus
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		expect(onBlurFn).toHaveBeenCalledTimes(1);
+		instance.unmount();
+	});
+});
+
+describe('ScrollableBox — enableVimBindings', () => {
+	it('disables vim keys when enableVimBindings=false', async () => {
+		const lines = makeLines(20);
+		const instance = render(
+			<ScrollableBox height={5} lines={lines} enableVimBindings={false} />,
+		);
+		await focus(instance.stdin);
+		await write(instance.stdin, 'j');
+		// Still shows Line 1 (no scroll happened)
+		expect(instance.lastFrame()!).toContain('Line 1');
+		instance.unmount();
+	});
+
+	it('arrow keys still work when enableVimBindings=false', async () => {
+		const lines = makeLines(20);
+		const instance = render(
+			<ScrollableBox height={5} lines={lines} enableVimBindings={false} />,
+		);
+		await focus(instance.stdin);
+		await write(instance.stdin, arrowDown);
+		expect(instance.lastFrame()!).toContain('Line 2');
+		expect(instance.lastFrame()!).not.toContain('Line 1');
+		instance.unmount();
+	});
+});

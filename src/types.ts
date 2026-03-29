@@ -32,6 +32,10 @@ export type ScrollActions = {
   pageUp: () => void;
   /** Scroll down by one viewport height */
   pageDown: () => void;
+  /** Scroll up by half a viewport height */
+  halfPageUp: () => void;
+  /** Scroll down by half a viewport height */
+  halfPageDown: () => void;
 };
 
 export type UseScrollableOptions = {
@@ -107,4 +111,10 @@ export type ScrollableBoxProps = {
   borderColor?: string;
   /** Border color when unfocused (default: gray) */
   borderDimColor?: string;
+  /** Enable vim-style keybindings (j/k/g/G/u/d). Default: true */
+  enableVimBindings?: boolean;
+  /** Called when the component gains focus */
+  onFocus?: () => void;
+  /** Called when the component loses focus */
+  onBlur?: () => void;
 };

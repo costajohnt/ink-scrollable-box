@@ -83,6 +83,14 @@ export function useScrollable({
 		setOffset(current => clamp(current + viewportHeight, 0, maxOffset));
 	}, [viewportHeight, maxOffset]);
 
+	const halfPageUp = useCallback(() => {
+		setOffset(current => clamp(current - Math.floor(viewportHeight / 2), 0, maxOffset));
+	}, [viewportHeight, maxOffset]);
+
+	const halfPageDown = useCallback(() => {
+		setOffset(current => clamp(current + Math.floor(viewportHeight / 2), 0, maxOffset));
+	}, [viewportHeight, maxOffset]);
+
 	const state = useMemo(() => {
 		const canScrollUp = adjustedOffset > 0;
 		const canScrollDown = adjustedOffset < maxOffset;
@@ -112,5 +120,7 @@ export function useScrollable({
 		scrollToBottom,
 		pageUp,
 		pageDown,
+		halfPageUp,
+		halfPageDown,
 	};
 }

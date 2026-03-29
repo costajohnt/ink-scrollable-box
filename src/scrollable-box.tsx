@@ -45,6 +45,9 @@ export function ScrollableBox({
 	trackColor,
 	borderColor,
 	borderDimColor = 'gray',
+	enableVimBindings = true,
+	onFocus,
+	onBlur,
 }: ScrollableBoxProps) {
 	validateProps(height, lines, children);
 
@@ -65,7 +68,34 @@ export function ScrollableBox({
 		followOutput,
 	});
 
-	const {isFocused} = useScrollableInput({scroll, focusable, id});
+	const {isFocused} = useScrollableInput({
+		scroll,
+		focusable,
+		id,
+		enableVimBindings,
+	});
+
+	// Fire onFocus / onBlur callbacks — keep refs in sync to avoid stale closures
+	const onFocusRef = useRef(onFocus);
+	useEffect(() => {
+		onFocusRef.current = onFocus;
+	}, [onFocus]);
+
+	const onBlurRef = useRef(onBlur);
+	useEffect(() => {
+		onBlurRef.current = onBlur;
+	}, [onBlur]);
+
+	const previousFocusedRef = useRef(false);
+	useEffect(() => {
+		if (isFocused && !previousFocusedRef.current) {
+			onFocusRef.current?.();
+		} else if (!isFocused && previousFocusedRef.current) {
+			onBlurRef.current?.();
+		}
+
+		previousFocusedRef.current = isFocused;
+	}, [isFocused]);
 
 	// Fire onScroll callback — keep ref in sync via useEffect to avoid
 	// writing to a ref during render (react-hooks/refs rule).

@@ -257,6 +257,66 @@ describe('useScrollable', () => {
 			expect(state.offset).toBe(5);
 			instance.unmount();
 		});
+
+		it('halfPageDown moves by half viewportHeight', () => {
+			const instance = render(
+				<HookTest options={{contentHeight: 30, viewportHeight: 10}} />,
+			);
+			React.act(() => {
+				scrollRef.current!.halfPageDown();
+			});
+			const state = getState(instance);
+			// Math.floor(10 / 2) = 5
+			expect(state.offset).toBe(5);
+			instance.unmount();
+		});
+
+		it('halfPageUp moves by half viewportHeight', () => {
+			const instance = render(
+				<HookTest
+					options={{contentHeight: 30, viewportHeight: 10, initialOffset: 15}}
+				/>,
+			);
+			React.act(() => {
+				scrollRef.current!.halfPageUp();
+			});
+			const state = getState(instance);
+			// 15 - Math.floor(10 / 2) = 10
+			expect(state.offset).toBe(10);
+			instance.unmount();
+		});
+
+		it('halfPageDown clamps to maxOffset', () => {
+			const instance = render(
+				<HookTest
+					options={{contentHeight: 30, viewportHeight: 10, initialOffset: 18}}
+				/>,
+			);
+			React.act(() => {
+				scrollRef.current!.halfPageDown();
+			});
+			const state = getState(instance);
+			// maxOffset = 20; 18 + 5 = 23 => clamped to 20
+			expect(state.offset).toBe(20);
+			expect(state.isAtBottom).toBe(true);
+			instance.unmount();
+		});
+
+		it('halfPageUp clamps to 0', () => {
+			const instance = render(
+				<HookTest
+					options={{contentHeight: 30, viewportHeight: 10, initialOffset: 3}}
+				/>,
+			);
+			React.act(() => {
+				scrollRef.current!.halfPageUp();
+			});
+			const state = getState(instance);
+			// 3 - 5 = -2 => clamped to 0
+			expect(state.offset).toBe(0);
+			expect(state.isAtTop).toBe(true);
+			instance.unmount();
+		});
 	});
 
 	describe('Clamping', () => {

@@ -6,12 +6,14 @@ export type UseScrollableInputOptions = {
   scroll: UseScrollableResult;
   focusable?: boolean;
   id?: string;
+  enableVimBindings?: boolean;
 };
 
 export function useScrollableInput({
   scroll,
   focusable = true,
   id,
+  enableVimBindings = true,
 }: UseScrollableInputOptions) {
   const {isFocused} = useFocus({isActive: focusable, id});
 
@@ -24,22 +26,80 @@ export function useScrollableInput({
   useInput(
     (input, key) => {
       const s = scrollRef.current;
-      if (key.downArrow || input === 'j') {
+
+      // Ctrl+U / Ctrl+D — always active (before vim checks so ctrl
+      // variants don't fall through to plain u/d)
+      if (key.ctrl && input === 'u') {
+        s.halfPageUp();
+        return;
+      }
+
+      if (key.ctrl && input === 'd') {
+        s.halfPageDown();
+        return;
+      }
+
+      // Arrow keys, Page Up/Down, Home/End — always active
+      if (key.downArrow) {
         s.scrollDown();
-      } else if (key.upArrow || input === 'k') {
+        return;
+      }
+
+      if (key.upArrow) {
         s.scrollUp();
-      } else if (input === 'g') {
-        s.scrollToTop();
-      } else if (input === 'G') {
-        s.scrollToBottom();
-      } else if (key.pageUp || input === 'u') {
+        return;
+      }
+
+      if (key.pageUp) {
         s.pageUp();
-      } else if (key.pageDown || input === 'd') {
+        return;
+      }
+
+      if (key.pageDown) {
         s.pageDown();
-      } else if (key.home) {
+        return;
+      }
+
+      if (key.home) {
         s.scrollToTop();
-      } else if (key.end) {
+        return;
+      }
+
+      if (key.end) {
         s.scrollToBottom();
+        return;
+      }
+
+      // Vim-style bindings — only when enabled
+      if (enableVimBindings) {
+        if (input === 'j') {
+          s.scrollDown();
+          return;
+        }
+
+        if (input === 'k') {
+          s.scrollUp();
+          return;
+        }
+
+        if (input === 'g') {
+          s.scrollToTop();
+          return;
+        }
+
+        if (input === 'G') {
+          s.scrollToBottom();
+          return;
+        }
+
+        if (input === 'u') {
+          s.pageUp();
+          return;
+        }
+
+        if (input === 'd') {
+          s.pageDown();
+        }
       }
     },
     {isActive: isFocused && focusable},
