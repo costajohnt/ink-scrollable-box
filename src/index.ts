@@ -9,3 +9,4 @@ export type {
 export {useScrollable} from './use-scrollable.js';
 export {useScrollableInput} from './use-scrollable-input.js';
 export {Scrollbar} from './scrollbar.js';
+export {ScrollableBox} from './scrollable-box.js';
