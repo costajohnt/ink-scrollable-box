@@ -33,8 +33,24 @@ function validateProps(height: number, lines?: string[], children?: React.ReactN
 function computeScrollToIndex(
 	index: number,
 	effectiveHeight: number,
-	align: 'start' | 'center' | 'end',
+	align: 'start' | 'center' | 'end' | 'auto',
+	currentOffset: number,
 ): number {
+	if (align === 'auto') {
+		// Already visible — don't scroll
+		if (index >= currentOffset && index < currentOffset + effectiveHeight) {
+			return currentOffset;
+		}
+
+		// Above viewport — align to top
+		if (index < currentOffset) {
+			return index;
+		}
+
+		// Below viewport — align to bottom
+		return index - effectiveHeight + 1;
+	}
+
 	if (align === 'end') {
 		return index - effectiveHeight + 1;
 	}
@@ -43,7 +59,7 @@ function computeScrollToIndex(
 		return index - Math.floor(effectiveHeight / 2);
 	}
 
-	return index;
+	return index; // 'start'
 }
 
 function buildRefHandle(
@@ -78,8 +94,8 @@ function buildRefHandle(
 		halfPageDown() {
 			scroll.halfPageDown();
 		},
-		scrollToIndex(index: number, options?: {align?: 'start' | 'center' | 'end'}) {
-			const target = computeScrollToIndex(index, effectiveHeight, options?.align ?? 'start');
+		scrollToIndex(index: number, options?: {align?: 'start' | 'center' | 'end' | 'auto'}) {
+			const target = computeScrollToIndex(index, effectiveHeight, options?.align ?? 'auto', scroll.offset);
 			scroll.scrollTo(target);
 		},
 		getScrollState() {
@@ -175,6 +191,10 @@ function ScrollableBoxRender(
 		offset,
 		onOffsetChange,
 		measureChildren,
+		debug,
+		onContentHeightChange,
+		onViewportSizeChange,
+		onItemHeightChange,
 	} = resolveProps(props);
 
 	validateProps(height, lines, children);
@@ -197,8 +217,17 @@ function ScrollableBoxRender(
 		}
 	}, [measureChildren, childrenArray.length, measuredHeight]);
 
+	const onItemHeightChangeRef = useRef(onItemHeightChange);
+	useEffect(() => {
+		onItemHeightChangeRef.current = onItemHeightChange;
+	}, [onItemHeightChange]);
+
 	const onItemMeasure = useCallback((index: number, h: number) => {
+		const previous = heightsRef.current[index];
 		heightsRef.current[index] = h;
+		if (previous !== undefined && previous !== h) {
+			onItemHeightChangeRef.current?.(index, h, previous);
+		}
 	}, []);
 
 	const contentHeight = useContentHeight(lines, measureChildren, measuredHeight, childrenArray.length);
@@ -229,6 +258,8 @@ function ScrollableBoxRender(
 		onScroll,
 		onFocus,
 		onBlur,
+		onContentHeightChange,
+		onViewportSizeChange,
 	});
 
 	const showBar = showScrollbar && contentHeight > effectiveHeight;
@@ -247,7 +278,7 @@ function ScrollableBoxRender(
 			<Box
 				height={effectiveHeight}
 				flexDirection='row'
-				overflowY='hidden'
+				overflowY={debug ? undefined : 'hidden'}
 			>
 				<Box flexDirection='column' flexGrow={1}>
 					<ScrollContent

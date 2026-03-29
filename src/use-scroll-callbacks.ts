@@ -16,6 +16,8 @@ type UseScrollCallbacksOptions = {
 	onScroll?: (state: ScrollState) => void;
 	onFocus?: () => void;
 	onBlur?: () => void;
+	onContentHeightChange?: (height: number, previousHeight: number) => void;
+	onViewportSizeChange?: (height: number, previousHeight: number) => void;
 };
 
 export function useScrollCallbacks({
@@ -24,6 +26,8 @@ export function useScrollCallbacks({
 	onScroll,
 	onFocus,
 	onBlur,
+	onContentHeightChange,
+	onViewportSizeChange,
 }: UseScrollCallbacksOptions) {
 	const onFocusRef = useRef(onFocus);
 	useEffect(() => {
@@ -72,4 +76,32 @@ export function useScrollCallbacks({
 		scroll.isAtBottom,
 		scroll.percentage,
 	]);
+
+	const onContentHeightChangeRef = useRef(onContentHeightChange);
+	useEffect(() => {
+		onContentHeightChangeRef.current = onContentHeightChange;
+	}, [onContentHeightChange]);
+
+	const previousContentHeightRef = useRef(scroll.contentHeight);
+	useEffect(() => {
+		const previous = previousContentHeightRef.current;
+		if (scroll.contentHeight !== previous) {
+			previousContentHeightRef.current = scroll.contentHeight;
+			onContentHeightChangeRef.current?.(scroll.contentHeight, previous);
+		}
+	}, [scroll.contentHeight]);
+
+	const onViewportSizeChangeRef = useRef(onViewportSizeChange);
+	useEffect(() => {
+		onViewportSizeChangeRef.current = onViewportSizeChange;
+	}, [onViewportSizeChange]);
+
+	const previousViewportHeightRef = useRef(scroll.viewportHeight);
+	useEffect(() => {
+		const previous = previousViewportHeightRef.current;
+		if (scroll.viewportHeight !== previous) {
+			previousViewportHeightRef.current = scroll.viewportHeight;
+			onViewportSizeChangeRef.current?.(scroll.viewportHeight, previous);
+		}
+	}, [scroll.viewportHeight]);
 }

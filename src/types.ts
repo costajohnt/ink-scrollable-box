@@ -89,7 +89,7 @@ export type ScrollableBoxRef = {
   /** Scroll down by half a viewport height */
   halfPageDown: () => void;
   /** Scroll to a specific item index with alignment */
-  scrollToIndex: (index: number, options?: {align?: 'start' | 'center' | 'end'}) => void;
+  scrollToIndex: (index: number, options?: {align?: 'start' | 'center' | 'end' | 'auto'}) => void;
   /** Get current scroll state */
   getScrollState: () => ScrollState;
 };
@@ -180,4 +180,12 @@ export type ScrollableBoxProps = {
    * (O(viewport) rendering). Default: false.
    */
   measureChildren?: boolean;
+  /** Disable overflow clipping for layout debugging (default: false) */
+  debug?: boolean;
+  /** Called when total content height changes */
+  onContentHeightChange?: (height: number, previousHeight: number) => void;
+  /** Called when viewport height changes */
+  onViewportSizeChange?: (height: number, previousHeight: number) => void;
+  /** Called when a measured child's height changes (requires measureChildren) */
+  onItemHeightChange?: (index: number, height: number, previousHeight: number) => void;
 };
