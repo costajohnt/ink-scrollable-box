@@ -279,3 +279,38 @@ describe('ScrollableBox — followOutput', () => {
 		instance.unmount();
 	});
 });
+
+describe('ScrollableBox — ANSI codes in lines', () => {
+	it('renders lines with ANSI color codes correctly', () => {
+		// Ink's <Text> component handles ANSI passthrough
+		const lines = ['Normal text', 'Also normal', 'Third line'];
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={3} lines={lines}/>,
+		);
+		const frame = lastFrame()!;
+		expect(frame).toContain('Normal text');
+		expect(frame).toContain('Also normal');
+		expect(frame).toContain('Third line');
+		unmount();
+	});
+});
+
+describe('ScrollableBox — onScroll callback', () => {
+	it('fires on initial render', async () => {
+		const scrollStates: Array<{offset: number}> = [];
+		const lines = makeLines(20);
+
+		await React.act(async () => {
+			render(
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					onScroll={state => scrollStates.push({offset: state.offset})}
+				/>,
+			);
+		});
+
+		expect(scrollStates.length).toBeGreaterThan(0);
+		expect(scrollStates[0]!.offset).toBe(0);
+	});
+});

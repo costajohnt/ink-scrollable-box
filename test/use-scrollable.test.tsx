@@ -329,6 +329,77 @@ describe('useScrollable', () => {
 		});
 	});
 
+	describe('dynamic size changes', () => {
+		it('clamps offset when viewportHeight increases', () => {
+			const instance = render(
+				<HookTest options={{contentHeight: 50, viewportHeight: 10, initialOffset: 35}} />,
+			);
+
+			// Increase viewport — maxOffset drops to 50-30=20, offset should clamp from 35 to 20
+			React.act(() => {
+				instance.rerender(
+					<HookTest options={{contentHeight: 50, viewportHeight: 30, initialOffset: 35}} />,
+				);
+			});
+
+			const state = getState(instance);
+			expect(state.offset).toBe(20);
+			instance.unmount();
+		});
+
+		it('clamps offset when contentHeight shrinks', () => {
+			const instance = render(
+				<HookTest options={{contentHeight: 50, viewportHeight: 10, initialOffset: 30}} />,
+			);
+
+			// Shrink content — maxOffset drops to 20-10=10
+			React.act(() => {
+				instance.rerender(
+					<HookTest options={{contentHeight: 20, viewportHeight: 10, initialOffset: 30}} />,
+				);
+			});
+
+			const state = getState(instance);
+			expect(state.offset).toBe(10);
+			instance.unmount();
+		});
+
+		it('maintains offset when content grows and offset still valid', () => {
+			const instance = render(
+				<HookTest options={{contentHeight: 50, viewportHeight: 10, initialOffset: 5}} />,
+			);
+
+			React.act(() => {
+				instance.rerender(
+					<HookTest options={{contentHeight: 100, viewportHeight: 10, initialOffset: 5}} />,
+				);
+			});
+
+			const state = getState(instance);
+			expect(state.offset).toBe(5);
+			instance.unmount();
+		});
+	});
+
+	describe('rapid scrolling', () => {
+		it('handles many sequential scrollDown calls without crash', () => {
+			const instance = render(
+				<HookTest options={{contentHeight: 50, viewportHeight: 10}} />,
+			);
+
+			React.act(() => {
+				for (let i = 0; i < 100; i++) {
+					scrollRef.current!.scrollDown();
+				}
+			});
+
+			const state = getState(instance);
+			expect(state.offset).toBe(40); // maxOffset
+			expect(state.isAtBottom).toBe(true);
+			instance.unmount();
+		});
+	});
+
 	describe('followOutput', () => {
 		it('auto-scrolls to bottom when content grows while at bottom', () => {
 			const instance = render(

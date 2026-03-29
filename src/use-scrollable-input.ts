@@ -1,3 +1,4 @@
+import {useEffect, useRef} from 'react';
 import {useFocus, useInput} from 'ink';
 import type {UseScrollableResult} from './types.js';
 
@@ -14,24 +15,31 @@ export function useScrollableInput({
 }: UseScrollableInputOptions) {
   const {isFocused} = useFocus({isActive: focusable, id});
 
+  // Use ref to avoid stale closures — scroll object changes every render
+  const scrollRef = useRef(scroll);
+  useEffect(() => {
+    scrollRef.current = scroll;
+  });
+
   useInput(
     (input, key) => {
+      const s = scrollRef.current;
       if (key.downArrow || input === 'j') {
-        scroll.scrollDown();
+        s.scrollDown();
       } else if (key.upArrow || input === 'k') {
-        scroll.scrollUp();
+        s.scrollUp();
       } else if (input === 'g') {
-        scroll.scrollToTop();
+        s.scrollToTop();
       } else if (input === 'G') {
-        scroll.scrollToBottom();
+        s.scrollToBottom();
       } else if (key.pageUp || input === 'u') {
-        scroll.pageUp();
+        s.pageUp();
       } else if (key.pageDown || input === 'd') {
-        scroll.pageDown();
+        s.pageDown();
       } else if (key.home) {
-        scroll.scrollToTop();
+        s.scrollToTop();
       } else if (key.end) {
-        scroll.scrollToBottom();
+        s.scrollToBottom();
       }
     },
     {isActive: isFocused && focusable},
