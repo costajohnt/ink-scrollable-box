@@ -62,6 +62,8 @@ export type ScrollbarProps = {
   viewportHeight: number;
   offset: number;
   isFocused: boolean;
+  /** Scrollbar visual style. Default: 'block'. */
+  scrollbarStyle?: 'block' | 'line' | 'thick' | 'dots';
   thumbCharacter?: string;
   trackCharacter?: string;
   thumbColor?: string;
@@ -130,6 +132,8 @@ export type ScrollableBoxProps = {
   id?: string;
   /** Scroll event callback */
   onScroll?: (state: ScrollState) => void;
+  /** Scrollbar visual style. Default: 'block'. */
+  scrollbarStyle?: 'block' | 'line' | 'thick' | 'dots';
   /** Scrollbar thumb character (default: █) */
   scrollbarCharacter?: string;
   /** Scrollbar track character (default: ░) */

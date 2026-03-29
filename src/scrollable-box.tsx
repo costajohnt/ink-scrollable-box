@@ -208,6 +208,7 @@ function ScrollableBoxRender(
 		focusable,
 		id,
 		onScroll,
+		scrollbarStyle,
 		scrollbarCharacter,
 		trackCharacter,
 		upIndicator,
@@ -339,6 +340,7 @@ function ScrollableBoxRender(
 							viewportHeight={effectiveHeight}
 							offset={scroll.offset}
 							isFocused={isFocused}
+							scrollbarStyle={scrollbarStyle}
 							thumbCharacter={scrollbarCharacter}
 							trackCharacter={trackCharacter}
 							thumbColor={scrollbarColor}
