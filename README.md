@@ -6,8 +6,7 @@
 
 Scrollable container component for [Ink](https://github.com/vadimdemedes/ink) with keyboard navigation, vim bindings, scrollbar styles, and auto-follow.
 
-<!-- TODO: Add animated demo GIF here once recorded -->
-<!-- ![demo](media/hero.gif) -->
+![hero demo](media/hero.gif)
 
 ## Install
 
@@ -71,6 +70,8 @@ render(
 
 ### Children Mode (styled React nodes)
 
+![children mode demo](media/children-mode.gif)
+
 ```tsx
 import {render, Text} from 'ink';
 import {ScrollableBox} from 'ink-scrollable-box';
@@ -91,6 +92,8 @@ render(
 ```
 
 ### Log Follower (followOutput)
+
+![log follower demo](media/log-follower.gif)
 
 ```tsx
 import {useState, useEffect} from 'react';
@@ -113,6 +116,8 @@ render(<App />);
 ```
 
 ### Multi-Pane (Tab focus)
+
+![multi-pane demo](media/multi-pane.gif)
 
 ```tsx
 import {render, Box, Text} from 'ink';
