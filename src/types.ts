@@ -74,6 +74,8 @@ export type ScrollbarProps = {
 export type ScrollableBoxRef = {
   /** Scroll to a specific offset (clamped to valid range) */
   scrollTo: (offset: number) => void;
+  /** Scroll by a relative delta (positive = down, negative = up, clamped) */
+  scrollBy: (delta: number) => void;
   /** Jump to the top */
   scrollToTop: () => void;
   /** Jump to the bottom */
@@ -94,6 +96,8 @@ export type ScrollableBoxRef = {
   scrollToIndex: (index: number, options?: {align?: 'start' | 'center' | 'end' | 'auto'}) => void;
   /** Get current scroll state */
   getScrollState: () => ScrollState;
+  /** Get the maximum scroll offset (contentHeight - viewportHeight) */
+  getBottomOffset: () => number;
   /** Get the height of a specific child (in terminal lines). Returns 0 if index is out of range. In non-measure mode, returns 1. */
   getItemHeight: (index: number) => number;
   /** Get the position and height of a specific child. Returns undefined if index is out of range. */

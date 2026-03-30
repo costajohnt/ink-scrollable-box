@@ -702,6 +702,62 @@ describe('ScrollableBox — ref API', () => {
 		expect(scrollState.isAtBottom).toBe(false);
 		instance.unmount();
 	});
+
+	it('scrollBy(delta) scrolls by relative amount', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<RefTest
+					lines={lines}
+					action={ref => {
+						ref.scrollBy(3);
+					}}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		expect(frame).toContain('Line 4');
+		expect(frame).not.toContain('Line 1');
+		instance.unmount();
+	});
+
+	it('scrollBy(negative) scrolls up', async () => {
+		const lines = makeLines(20);
+		const outerRef = React.createRef<ScrollableBoxRef>();
+
+		const instance = render(<ScrollableBox ref={outerRef} height={5} lines={lines} />);
+		await tick();
+
+		// First scroll to 10
+		React.act(() => {
+			outerRef.current!.scrollTo(10);
+		});
+		await tick();
+
+		// Then scroll by -3
+		React.act(() => {
+			outerRef.current!.scrollBy(-3);
+		});
+		await tick();
+
+		const frame = instance.lastFrame()!;
+		expect(frame).toContain('Line 8');
+		instance.unmount();
+	});
+
+	it('getBottomOffset() returns max scroll offset', async () => {
+		const lines = makeLines(20);
+		const outerRef = React.createRef<ScrollableBoxRef>();
+
+		const instance = render(<ScrollableBox ref={outerRef} height={5} lines={lines} />);
+		await tick();
+
+		expect(outerRef.current!.getBottomOffset()).toBe(15); // 20 - 5
+		instance.unmount();
+	});
 });
 
 describe('ScrollableBox — overscan', () => {

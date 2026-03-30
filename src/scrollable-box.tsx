@@ -93,6 +93,9 @@ function buildRefHandle(context: RefHandleContext): ScrollableBoxRef {
 		scrollTo(offset: number) {
 			scroll.scrollTo(offset);
 		},
+		scrollBy(delta: number) {
+			scroll.scrollTo(scroll.offset + delta);
+		},
 		scrollToTop() {
 			scroll.scrollToTop();
 		},
@@ -171,6 +174,9 @@ function buildRefHandle(context: RefHandleContext): ScrollableBoxRef {
 				isAtBottom: scroll.isAtBottom,
 				percentage: scroll.percentage,
 			};
+		},
+		getBottomOffset() {
+			return Math.max(0, scroll.contentHeight - scroll.viewportHeight);
 		},
 		getItemHeight(index: number): number {
 			if (index < 0 || index >= itemCount) {

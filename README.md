@@ -393,6 +393,7 @@ All methods available on a ref obtained via `useRef<ScrollableBoxRef>()`.
 | Method | Description |
 |--------|-------------|
 | `scrollTo(offset)` | Jump to a specific offset (clamped to valid range) |
+| `scrollBy(delta)` | Scroll by a relative delta (positive = down, negative = up) |
 | `scrollToTop()` | Jump to the top |
 | `scrollToBottom()` | Jump to the bottom |
 | `scrollUp()` | Scroll up by `scrollStep` lines |
@@ -403,6 +404,7 @@ All methods available on a ref obtained via `useRef<ScrollableBoxRef>()`.
 | `halfPageDown()` | Scroll down by half viewport height |
 | `scrollToIndex(index, options?)` | Scroll to a specific item index with optional `{align: 'start' \| 'center' \| 'end' \| 'auto'}` |
 | `getScrollState()` | Returns the current `ScrollState` object |
+| `getBottomOffset()` | Returns the maximum scroll offset (`contentHeight - viewportHeight`) |
 | `getItemHeight(index)` | Get the height of a child in terminal lines (returns 1 in non-measure mode) |
 | `getItemPosition(index)` | Get `{top, height}` of a child, or `undefined` if out of range |
 | `remeasureItem(index)` | Force re-measurement of a child (requires `measureChildren`) |
