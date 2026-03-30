@@ -1,6 +1,7 @@
 # ink-scrollable-box
 
 [![npm version](https://img.shields.io/npm/v/ink-scrollable-box.svg)](https://www.npmjs.com/package/ink-scrollable-box)
+[![npm downloads](https://img.shields.io/npm/dm/ink-scrollable-box.svg)](https://www.npmjs.com/package/ink-scrollable-box)
 [![CI](https://github.com/costajohnt/ink-scrollable-box/actions/workflows/ci.yml/badge.svg)](https://github.com/costajohnt/ink-scrollable-box/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
