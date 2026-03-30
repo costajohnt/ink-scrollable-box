@@ -6,6 +6,9 @@
 
 Scrollable container component for [Ink](https://github.com/vadimdemedes/ink) with keyboard navigation, vim bindings, scrollbar styles, and auto-follow.
 
+<!-- TODO: Add animated demo GIF here once recorded -->
+<!-- ![demo](media/hero.gif) -->
+
 ## Install
 
 ```bash
@@ -173,7 +176,7 @@ const left = Array.from({length: 100}, (_, i) => `Left-${i + 1}`);
 const right = Array.from({length: 100}, (_, i) => `Right-${i + 1}`);
 
 function App() {
-  const linked = useLinkedScroll({mode: 'absolute'});
+  const linked = useLinkedScroll();
   return (
     <Box flexDirection="row" gap={2}>
       <ScrollableBox height={10} lines={left} offset={linked.offset} onOffsetChange={linked.onOffsetChange} autoFocus border />
@@ -348,7 +351,6 @@ Synchronize scroll position across multiple `ScrollableBox` instances.
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `mode` | `'absolute' \| 'proportional'` | `'absolute'` | `absolute` = same line offset, `proportional` = same percentage |
 | `initialOffset` | `number` | `0` | Starting offset |
 
 **Returns:**
@@ -357,7 +359,6 @@ Synchronize scroll position across multiple `ScrollableBox` instances.
 |-------|------|-------------|
 | `offset` | `number` | Shared scroll offset |
 | `onOffsetChange` | `(offset: number) => void` | Spread onto each `ScrollableBox` |
-| `mode` | `'absolute' \| 'proportional'` | The active sync mode |
 
 ---
 
@@ -455,7 +456,7 @@ The `useScrollable` hook manages offset state and exposes scroll actions. `useSc
 | Standalone hooks | useScrollable, useScrollableInput | -- | -- |
 | Ref API | scrollToIndex, getItemHeight, etc. | -- | -- |
 | TypeScript | first-class | yes | yes |
-| Dependencies | 0 (peer only) | 18 | 3 |
+| Dependencies | 0 (peer only) | 0 (peer only) | 0 |
 
 ## Contributing
 
