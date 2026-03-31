@@ -131,7 +131,7 @@ export function Scrollbar({
 	const needsGap = (scrollbarStyle ?? 'block') !== 'block';
 
 	return (
-		<Box flexDirection='column' flexShrink={0} width={1} marginLeft={needsGap ? 1 : 0}>
+		<Box flexDirection='column' flexShrink={0} width={1} marginLeft={needsGap ? 1 : 0} aria-hidden>
 			{lines}
 		</Box>
 	);

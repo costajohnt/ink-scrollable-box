@@ -56,7 +56,7 @@ export function ScrollContent({
 
 	const overscanAbove = overscan > 0 && overscanAboveStart < scrollOffset
 		? (
-			<Box height={0} overflowY='hidden' flexDirection='column'>
+			<Box height={0} overflowY='hidden' flexDirection='column' aria-hidden>
 				{lines
 					? lines.slice(overscanAboveStart, scrollOffset).map((line, i) => (
 						<Text key={`os-above-${overscanAboveStart + i}`}>{line}</Text>
@@ -68,7 +68,7 @@ export function ScrollContent({
 
 	const overscanBelow = overscan > 0 && scrollOffset + effectiveHeight < overscanBelowEnd
 		? (
-			<Box height={0} overflowY='hidden' flexDirection='column'>
+			<Box height={0} overflowY='hidden' flexDirection='column' aria-hidden>
 				{lines
 					? lines.slice(scrollOffset + effectiveHeight, overscanBelowEnd).map((line, i) => (
 						<Text key={`os-below-${scrollOffset + effectiveHeight + i}`}>{line}</Text>
