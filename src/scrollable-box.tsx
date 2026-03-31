@@ -436,8 +436,10 @@ function ScrollableBoxRender(
 			flexGrow={isOutside ? 1 : undefined}
 			borderStyle={border ? 'round' : undefined}
 			borderColor={border ? activeBorderColor : undefined}
-			aria-label={containerLabel}
 		>
+			<Box height={0} overflowY='hidden'>
+				<Text aria-label={containerLabel}>{' '}</Text>
+			</Box>
 			<Box
 				height={effectiveHeight}
 				flexDirection='row'
