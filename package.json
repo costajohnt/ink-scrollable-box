@@ -1,6 +1,6 @@
 {
   "name": "ink-scrollable-box",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Scrollable container component for Ink with keyboard navigation, vim bindings, and auto-follow",
   "keywords": [
     "ink",
