@@ -8,7 +8,7 @@ import {
 	useRef,
 	useState,
 } from 'react';
-import {Box, Text} from 'ink';
+import {Box, Text, useIsScreenReaderEnabled} from 'ink';
 import {useScrollable} from './use-scrollable.js';
 import {useScrollableInput} from './use-scrollable-input.js';
 import {useScrollCallbacks} from './use-scroll-callbacks.js';
@@ -299,6 +299,7 @@ function ScrollableBoxRender(
 		onReachStart,
 		reachThreshold,
 		scrollbarPosition,
+		ariaLabel,
 	} = resolveProps(props);
 
 	validateProps({
@@ -384,10 +385,13 @@ function ScrollableBoxRender(
 		reachThreshold,
 	});
 
+	const isScreenReaderEnabled = useIsScreenReaderEnabled();
+
 	const hasOverflow = contentHeight > effectiveHeight;
 	const showBar = showScrollbar && hasOverflow;
 	const isOutside = scrollbarPosition === 'outside';
 	const activeBorderColor = isFocused ? (borderColor ?? 'blue') : borderDimColor;
+	const containerLabel = ariaLabel ?? (followOutput ? 'Scrollable log' : 'Scrollable content');
 
 	const scrollbarElement = showBar
 		? (
@@ -408,11 +412,17 @@ function ScrollableBoxRender(
 
 	const indicators = showIndicators && hasOverflow
 		? (
-			<Box justifyContent='space-between'>
+			<Box justifyContent='space-between' aria-hidden>
 				<Text dimColor>{scroll.canScrollUp ? upIndicator : ' '}</Text>
 				<Text dimColor>{scroll.canScrollDown ? downIndicator : ' '}</Text>
 			</Box>
 		)
+		: null;
+
+	const visibleEnd = Math.min(scroll.offset + effectiveHeight, contentHeight);
+	const positionLabel = `${containerLabel}: showing lines ${scroll.offset + 1} to ${visibleEnd} of ${contentHeight}`;
+	const screenReaderAnnouncement = isScreenReaderEnabled && hasOverflow
+		? <Text aria-label={isFocused ? `${positionLabel}, focused` : positionLabel}>{' '}</Text>
 		: null;
 
 	const contentBox = (
@@ -422,6 +432,7 @@ function ScrollableBoxRender(
 			flexGrow={isOutside ? 1 : undefined}
 			borderStyle={border ? 'round' : undefined}
 			borderColor={border ? activeBorderColor : undefined}
+			aria-label={containerLabel}
 		>
 			<Box
 				height={effectiveHeight}
@@ -443,6 +454,7 @@ function ScrollableBoxRender(
 				{isOutside ? null : scrollbarElement}
 			</Box>
 			{indicators}
+			{screenReaderAnnouncement}
 		</Box>
 	);
 

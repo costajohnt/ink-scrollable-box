@@ -193,4 +193,6 @@ export type ScrollableBoxProps = {
   onReachStart?: () => void;
   /** Number of lines from the edge to trigger onReachEnd/onReachStart (default: 5) */
   reachThreshold?: number;
+  /** Accessible label for the scrollable region (default: "Scrollable content") */
+  ariaLabel?: string;
 };
