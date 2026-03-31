@@ -420,7 +420,7 @@ function ScrollableBoxRender(
 		: null;
 
 	const visibleEnd = Math.min(scroll.offset + effectiveHeight, contentHeight);
-	const positionLabel = `${containerLabel}: showing lines ${scroll.offset + 1} to ${visibleEnd} of ${contentHeight}`;
+	const positionLabel = `Showing lines ${scroll.offset + 1} to ${visibleEnd} of ${contentHeight}`;
 	const screenReaderAnnouncement = isScreenReaderEnabled && hasOverflow
 		? (
 			<Box height={0} overflowY='hidden'>
