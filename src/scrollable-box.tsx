@@ -422,7 +422,11 @@ function ScrollableBoxRender(
 	const visibleEnd = Math.min(scroll.offset + effectiveHeight, contentHeight);
 	const positionLabel = `${containerLabel}: showing lines ${scroll.offset + 1} to ${visibleEnd} of ${contentHeight}`;
 	const screenReaderAnnouncement = isScreenReaderEnabled && hasOverflow
-		? <Text aria-label={isFocused ? `${positionLabel}, focused` : positionLabel}>{' '}</Text>
+		? (
+			<Box height={0} overflowY='hidden'>
+				<Text aria-label={isFocused ? `${positionLabel}, focused` : positionLabel}>{' '}</Text>
+			</Box>
+		)
 		: null;
 
 	const contentBox = (
