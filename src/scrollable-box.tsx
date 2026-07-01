@@ -257,6 +257,51 @@ function useContentHeight(
 	return measureChildren ? measuredHeight : childrenLength;
 }
 
+type IndicatorsProps = {
+	showIndicators: boolean;
+	hasOverflow: boolean;
+	canScrollUp: boolean;
+	canScrollDown: boolean;
+	upIndicator: string;
+	downIndicator: string;
+};
+
+function Indicators({
+	showIndicators, hasOverflow, canScrollUp, canScrollDown, upIndicator, downIndicator,
+}: IndicatorsProps) {
+	if (!showIndicators || !hasOverflow) {
+		return null;
+	}
+
+	return (
+		<Box justifyContent='space-between' aria-hidden>
+			<Text dimColor>{canScrollUp ? upIndicator : ' '}</Text>
+			<Text dimColor>{canScrollDown ? downIndicator : ' '}</Text>
+		</Box>
+	);
+}
+
+type ScreenReaderAnnouncementProps = {
+	isScreenReaderEnabled: boolean;
+	hasOverflow: boolean;
+	isFocused: boolean;
+	positionLabel: string;
+};
+
+function ScreenReaderAnnouncement({
+	isScreenReaderEnabled, hasOverflow, isFocused, positionLabel,
+}: ScreenReaderAnnouncementProps) {
+	if (!isScreenReaderEnabled || !hasOverflow) {
+		return null;
+	}
+
+	return (
+		<Box height={0} overflowY='hidden'>
+			<Text aria-label={isFocused ? `${positionLabel}, focused` : positionLabel}>{' '}</Text>
+		</Box>
+	);
+}
+
 function ScrollableBoxRender(
 	props: ScrollableBoxProps,
 	ref: React.ForwardedRef<ScrollableBoxRef>,
@@ -422,24 +467,27 @@ function ScrollableBoxRender(
 		)
 		: null;
 
-	const indicators = showIndicators && hasOverflow
-		? (
-			<Box justifyContent='space-between' aria-hidden>
-				<Text dimColor>{scroll.canScrollUp ? upIndicator : ' '}</Text>
-				<Text dimColor>{scroll.canScrollDown ? downIndicator : ' '}</Text>
-			</Box>
-		)
-		: null;
+	const indicators = (
+		<Indicators
+			showIndicators={showIndicators}
+			hasOverflow={hasOverflow}
+			canScrollUp={scroll.canScrollUp}
+			canScrollDown={scroll.canScrollDown}
+			upIndicator={upIndicator}
+			downIndicator={downIndicator}
+		/>
+	);
 
 	const visibleEnd = Math.min(scroll.offset + effectiveHeight, contentHeight);
 	const positionLabel = `Showing lines ${scroll.offset + 1} to ${visibleEnd} of ${contentHeight}`;
-	const screenReaderAnnouncement = isScreenReaderEnabled && hasOverflow
-		? (
-			<Box height={0} overflowY='hidden'>
-				<Text aria-label={isFocused ? `${positionLabel}, focused` : positionLabel}>{' '}</Text>
-			</Box>
-		)
-		: null;
+	const screenReaderAnnouncement = (
+		<ScreenReaderAnnouncement
+			isScreenReaderEnabled={isScreenReaderEnabled}
+			hasOverflow={hasOverflow}
+			isFocused={isFocused}
+			positionLabel={positionLabel}
+		/>
+	);
 
 	const contentBox = (
 		<Box

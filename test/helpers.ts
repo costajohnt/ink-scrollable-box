@@ -34,7 +34,7 @@ export function makeLines(n: number, prefix = 'Line'): string[] {
 
 // SGR (color/style) escape sequences, e.g. ESC[2m ... ESC[22m.
 // eslint-disable-next-line no-control-regex
-const ansiPattern = /\u001B\[[0-9;]*m/g;
+const ansiPattern = /\u001B\[[\d;]*m/g;
 
 /**
  * Strip ANSI color/style escape codes so assertions are independent of
@@ -42,7 +42,7 @@ const ansiPattern = /\u001B\[[0-9;]*m/g;
  * inflate string lengths and break literal `toContain`/length checks.
  */
 export function stripAnsi(input: string): string {
-	return input.replace(ansiPattern, '');
+	return input.replaceAll(ansiPattern, '');
 }
 
 export function getState(instance: ReturnType<typeof render>): Record<string, unknown> {
