@@ -839,6 +839,52 @@ describe('ScrollableBox — measureChildren', () => {
 		expect(frame).toContain('Line 5');
 		unmount();
 	});
+
+	it('recomputes total content height when a child grows in place (stable count)', async () => {
+		// Regression: heights live in heightsRef (a ref); when a child's measured
+		// height changes without the child count changing, contentHeight must still
+		// update. Use a generous, unclipped (debug) viewport so measureElement
+		// reports true multi-line heights deterministically.
+		const outerRef = React.createRef<ScrollableBoxRef>();
+
+		function GrowTest({first}: {first: string}) {
+			return (
+				<ScrollableBox
+					ref={outerRef}
+					height={20}
+					debug
+					measureChildren
+					showScrollbar={false}
+					showIndicators={false}
+				>
+					<Text>{first}</Text>
+					<Text>Second</Text>
+				</ScrollableBox>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+		await React.act(async () => {
+			instance = render(<GrowTest first='X' />);
+		});
+		await tick();
+		await tick();
+
+		// Both children are 1 line tall.
+		expect(outerRef.current!.getScrollState().contentHeight).toBe(2);
+
+		// First child grows from 1 to 5 lines; child count stays 2.
+		await React.act(async () => {
+			instance.rerender(<GrowTest first={'A\nB\nC\nD\nE'} />);
+		});
+		await tick();
+		await tick();
+
+		expect(outerRef.current!.getItemHeight(0)).toBe(5);
+		// contentHeight must reflect the in-place growth: 5 + 1 = 6.
+		expect(outerRef.current!.getScrollState().contentHeight).toBe(6);
+		instance.unmount();
+	});
 });
 
 describe('ScrollableBox — controlled mode', () => {

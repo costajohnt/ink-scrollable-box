@@ -314,6 +314,10 @@ function ScrollableBoxRender(
 	// Measurement state for variable-height children
 	const heightsRef = useRef<number[]>([]);
 	const [measuredHeight, setMeasuredHeight] = useState(childrenArray.length);
+	// Bumped whenever a child's measured height changes in place. Heights live
+	// in heightsRef (a ref), so this counter is what drives the total-height
+	// recompute effect to react to in-place growth/shrink at a stable count.
+	const [measurementVersion, setMeasurementVersion] = useState(0);
 
 	useEffect(() => {
 		if (heightsRef.current.length > childrenArray.length) {
@@ -328,7 +332,7 @@ function ScrollableBoxRender(
 				setMeasuredHeight(total);
 			}
 		}
-	}, [measureChildren, childrenArray.length, measuredHeight]);
+	}, [measureChildren, childrenArray.length, measuredHeight, measurementVersion]);
 
 	const onItemHeightChangeRef = useRef(onItemHeightChange);
 	useEffect(() => {
@@ -338,6 +342,12 @@ function ScrollableBoxRender(
 	const onItemMeasure = useCallback((index: number, h: number) => {
 		const previous = heightsRef.current[index];
 		heightsRef.current[index] = h;
+		if (previous !== h) {
+			// Height changed (or was measured for the first time) — trigger a
+			// recompute of the total content height.
+			setMeasurementVersion(v => v + 1);
+		}
+
 		if (previous !== undefined && previous !== h) {
 			onItemHeightChangeRef.current?.(index, h, previous);
 		}
