@@ -267,6 +267,7 @@ function ScrollableBoxRender(
 		lines,
 		children,
 		followOutput,
+		initialOffset,
 		scrollStep,
 		border,
 		showScrollbar,
@@ -361,6 +362,7 @@ function ScrollableBoxRender(
 		viewportHeight: effectiveHeight,
 		scrollStep,
 		followOutput,
+		initialOffset,
 		controlledOffset: offset,
 		onOffsetChange,
 	});

@@ -996,6 +996,55 @@ describe('ScrollableBox — controlled mode', () => {
 	});
 });
 
+describe('ScrollableBox — initialOffset', () => {
+	it('starts uncontrolled scroll at the given initialOffset', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					initialOffset={10}
+					showScrollbar={false}
+					showIndicators={false}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// initialOffset=10 means lines 11-15 are visible on mount.
+		expect(frame).toContain('Line 11');
+		expect(frame).toContain('Line 15');
+		expect(frame).not.toContain('Line 10');
+		instance.unmount();
+	});
+
+	it('clamps initialOffset to the valid range', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					initialOffset={100}
+					showScrollbar={false}
+					showIndicators={false}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// maxOffset = 20 - 5 = 15, so clamped to 15 => lines 16-20 visible.
+		expect(frame).toContain('Line 16');
+		expect(frame).toContain('Line 20');
+		instance.unmount();
+	});
+});
+
 describe('ScrollableBox — scrollToIndex auto alignment', () => {
 	it('auto — item already visible, offset does not change', async () => {
 		const lines = makeLines(20);

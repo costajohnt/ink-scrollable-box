@@ -122,6 +122,12 @@ export type ScrollableBoxProps = {
   children?: React.ReactNode;
   /** Auto-scroll to bottom when content grows (default: false) */
   followOutput?: boolean;
+  /**
+   * Starting scroll offset for uncontrolled mode (default: 0). Ignored when
+   * `offset` (controlled mode) is provided. Useful for pinning a log view to
+   * the bottom on mount.
+   */
+  initialOffset?: number;
   /** Lines per arrow key press (default: 1) */
   scrollStep?: number;
   /** Draw rounded border around viewport (default: false) */

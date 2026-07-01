@@ -226,6 +226,7 @@ render(<App />);
 | `lines` | `string[]` | -- | String content (mutually exclusive with `children`) |
 | `children` | `ReactNode` | -- | React node content (mutually exclusive with `lines`) |
 | `followOutput` | `boolean` | `false` | Auto-scroll to bottom when content grows |
+| `initialOffset` | `number` | `0` | Starting scroll offset in uncontrolled mode (ignored when `offset` is set) |
 | `scrollStep` | `number` | `1` | Lines per arrow key / j/k press |
 | `border` | `boolean` | `false` | Render a rounded border around the viewport |
 | `overscan` | `number` | `0` | Extra items to pre-render above/below viewport |
