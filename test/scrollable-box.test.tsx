@@ -8,7 +8,7 @@ import {Text} from 'ink';
 import {ScrollableBox} from '../src/scrollable-box.js';
 import type {ScrollableBoxRef} from '../src/types.js';
 import {
-	tick, write, focus, makeLines,
+	tick, write, focus, makeLines, stripAnsi,
 } from './helpers.js';
 
 const arrowDown = '\u001B[B';
@@ -86,7 +86,9 @@ describe('ScrollableBox — lines mode', () => {
 		const {lastFrame, unmount} = render(
 			<ScrollableBox height={5} width={30} lines={lines}/>,
 		);
-		const frame = lastFrame()!;
+		// Strip ANSI so the width check counts visible columns, not color bytes
+		// (raw SGR codes inflate line length under FORCE_COLOR).
+		const frame = stripAnsi(lastFrame()!);
 		for (const line of frame.split('\n').filter(l => l.length > 0)) {
 			expect(line.length).toBeLessThanOrEqual(30);
 		}
@@ -122,7 +124,8 @@ describe('ScrollableBox — lines mode', () => {
 		);
 		await focus(instance.stdin);
 		await write(instance.stdin, arrowDown);
-		const frame = instance.lastFrame()!;
+		// Strip ANSI so the indicator glyphs match regardless of FORCE_COLOR.
+		const frame = stripAnsi(instance.lastFrame()!);
 		expect(frame).toContain('▲');
 		expect(frame).toContain('▼');
 		instance.unmount();

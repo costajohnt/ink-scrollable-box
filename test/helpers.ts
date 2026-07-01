@@ -32,6 +32,19 @@ export function makeLines(n: number, prefix = 'Line'): string[] {
 	return Array.from({length: n}, (_, i) => `${prefix} ${i + 1}`);
 }
 
+// SGR (color/style) escape sequences, e.g. ESC[2m ... ESC[22m.
+// eslint-disable-next-line no-control-regex
+const ansiPattern = /\u001B\[[0-9;]*m/g;
+
+/**
+ * Strip ANSI color/style escape codes so assertions are independent of
+ * FORCE_COLOR. Rendered frames include SGR codes when color is enabled, which
+ * inflate string lengths and break literal `toContain`/length checks.
+ */
+export function stripAnsi(input: string): string {
+	return input.replace(ansiPattern, '');
+}
+
 export function getState(instance: ReturnType<typeof render>): Record<string, unknown> {
 	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any
 	return JSON.parse(instance.lastFrame()!.trim()) as Record<string, unknown>;
