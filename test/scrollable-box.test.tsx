@@ -1385,6 +1385,70 @@ describe('ScrollableBox — onReachEnd / onReachStart', () => {
 		instance.unmount();
 	});
 
+	it('onReachEnd fires once on entering the zone and re-arms after leaving', async () => {
+		const onReachEnd = vi.fn();
+		const lines = makeLines(20); // maxOffset = 15
+
+		function LatchTest() {
+			const [currentOffset, setCurrentOffset] = useState(0);
+			return (
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					offset={currentOffset}
+					onOffsetChange={setCurrentOffset}
+					onReachEnd={onReachEnd}
+					reachThreshold={3}
+					showScrollbar={false}
+					showIndicators={false}
+				/>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(<LatchTest />);
+		});
+
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		onReachEnd.mockClear();
+
+		// Zone is offset >= maxOffset - threshold = 12. Scroll all the way to the
+		// bottom (offset 15). The callback must fire exactly ONCE — on entering
+		// the zone at offset 12 — not on every tick from 12..15.
+		for (let i = 0; i < 15; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		expect(onReachEnd).toHaveBeenCalledTimes(1);
+
+		// Leave the zone (scroll back above offset 12) to re-arm the latch.
+		for (let i = 0; i < 5; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write('\u001B[A'); // arrow up
+			});
+		}
+
+		// Re-enter the zone — the callback fires a second time.
+		for (let i = 0; i < 5; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		expect(onReachEnd).toHaveBeenCalledTimes(2);
+		instance.unmount();
+	});
+
 	it('custom reachThreshold works', async () => {
 		const onReachEnd = vi.fn();
 		const lines = makeLines(20);
