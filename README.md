@@ -17,7 +17,7 @@ yarn add ink-scrollable-box
 pnpm add ink-scrollable-box
 ```
 
-Requires `ink >= 4` and `react >= 18` as peer dependencies.
+Requires `ink >= 6` and `react >= 19` as peer dependencies. (The component uses Ink 6's `useIsScreenReaderEnabled` hook for accessibility announcements.)
 
 ## Quick Start
 
