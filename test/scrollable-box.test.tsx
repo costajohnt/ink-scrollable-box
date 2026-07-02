@@ -935,6 +935,94 @@ describe('ScrollableBox — measureChildren', () => {
 		expect(outerRef.current!.getScrollState().contentHeight).toBe(6);
 		instance.unmount();
 	});
+
+	it('recomputes contentHeight to 0 when all measured children collapse', async () => {
+		// Regression: the recompute must distinguish "not measured yet" from a
+		// genuine collapse to total height 0. An empty <Text> measures 0 lines;
+		// with a `total > 0` guard, contentHeight would stay stale (phantom
+		// overflow). Generous debug viewport for deterministic measurement.
+		const outerRef = React.createRef<ScrollableBoxRef>();
+
+		function CollapseTest({collapsed}: {collapsed: boolean}) {
+			const content = collapsed ? '' : 'A\nB\nC\nD\nE';
+			return (
+				<ScrollableBox
+					ref={outerRef}
+					height={20}
+					debug
+					measureChildren
+					showScrollbar={false}
+					showIndicators={false}
+				>
+					<Text>{content}</Text>
+					<Text>{content}</Text>
+				</ScrollableBox>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+		await React.act(async () => {
+			instance = render(<CollapseTest collapsed={false} />);
+		});
+		await tick();
+		await tick();
+
+		// Two 5-line children: 5 + 5 = 10.
+		expect(outerRef.current!.getScrollState().contentHeight).toBe(10);
+
+		// Both children collapse to 0 lines; total is a legitimate 0.
+		await React.act(async () => {
+			instance.rerender(<CollapseTest collapsed />);
+		});
+		await tick();
+		await tick();
+
+		expect(outerRef.current!.getScrollState().contentHeight).toBe(0);
+		instance.unmount();
+	});
+
+	it('drops contentHeight when a grown child is removed', async () => {
+		// Regression coverage for child removal + height aggregation together:
+		// grow child 0 to 5 lines (total 6), then remove it and assert the total
+		// falls to the remaining child's height.
+		const outerRef = React.createRef<ScrollableBoxRef>();
+
+		function RemoveTest({showTall}: {showTall: boolean}) {
+			return (
+				<ScrollableBox
+					ref={outerRef}
+					height={20}
+					debug
+					measureChildren
+					showScrollbar={false}
+					showIndicators={false}
+				>
+					{showTall ? <Text>{'A\nB\nC\nD\nE'}</Text> : null}
+					<Text>Second</Text>
+				</ScrollableBox>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+		await React.act(async () => {
+			instance = render(<RemoveTest showTall />);
+		});
+		await tick();
+		await tick();
+
+		// 5-line child + 1-line child = 6.
+		expect(outerRef.current!.getScrollState().contentHeight).toBe(6);
+
+		// Remove the tall child; only the 1-line "Second" remains.
+		await React.act(async () => {
+			instance.rerender(<RemoveTest showTall={false} />);
+		});
+		await tick();
+		await tick();
+
+		expect(outerRef.current!.getScrollState().contentHeight).toBe(1);
+		instance.unmount();
+	});
 });
 
 describe('ScrollableBox — controlled mode', () => {

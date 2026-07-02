@@ -262,6 +262,23 @@ function useContentHeight(
 	return measureChildren ? measuredHeight : childrenLength;
 }
 
+// True only when every child index 0..count-1 has a numeric measured height.
+// Index-based (not `heights.every`) so a hole left by remeasureItem counts as
+// unmeasured rather than being skipped.
+function allChildrenMeasured(heights: number[], count: number): boolean {
+	if (heights.length !== count) {
+		return false;
+	}
+
+	for (let i = 0; i < count; i++) {
+		if (typeof heights[i] !== 'number') {
+			return false;
+		}
+	}
+
+	return true;
+}
+
 type IndicatorsProps = {
 	showIndicators: boolean;
 	hasOverflow: boolean;
@@ -377,9 +394,13 @@ function ScrollableBoxRender(
 	}, [childrenArray.length]);
 
 	useEffect(() => {
-		if (measureChildren && heightsRef.current.length === childrenArray.length) {
+		// Only trust the total once every child has reported a height. Checking
+		// per-index (not `total > 0`) lets a genuine collapse to 0 update
+		// contentHeight instead of leaving it stale (which would show phantom
+		// overflow), while still ignoring the not-yet-measured initial state.
+		if (measureChildren && allChildrenMeasured(heightsRef.current, childrenArray.length)) {
 			const total = heightsRef.current.reduce((sum, h) => sum + h, 0);
-			if (total !== measuredHeight && total > 0) {
+			if (total !== measuredHeight) {
 				setMeasuredHeight(total);
 			}
 		}
