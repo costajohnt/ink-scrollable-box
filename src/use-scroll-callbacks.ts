@@ -130,22 +130,34 @@ export function useScrollCallbacks({
 	// viewport already inside a zone does not fire spuriously on mount. The
 	// callback is edge-triggered thereafter: it fires only when the offset
 	// crosses from outside the zone to inside.
+	//
+	// The zone can also "appear" around a stationary offset when overflow first
+	// shows up (maxOffset crosses 0 -> positive as content grows). That is a
+	// change in the zone, not a scroll into it, so it is re-seeded rather than
+	// fired — otherwise a fits-then-overflows view would fire once with no user
+	// action.
 	const inReachEndZoneRef = useRef<boolean | undefined>(undefined);
+	const previousEndMaxOffsetRef = useRef(maxOffset);
 	useEffect(() => {
 		const inZone = maxOffset > 0 && scroll.offset >= maxOffset - threshold;
 		const wasInZone = inReachEndZoneRef.current;
+		const overflowAppeared = previousEndMaxOffsetRef.current === 0 && maxOffset > 0;
+		previousEndMaxOffsetRef.current = maxOffset;
 		inReachEndZoneRef.current = inZone;
-		if (wasInZone !== undefined && inZone && !wasInZone) {
+		if (wasInZone !== undefined && !overflowAppeared && inZone && !wasInZone) {
 			onReachEndRef.current?.();
 		}
 	}, [scroll.offset, maxOffset, threshold]);
 
 	const inReachStartZoneRef = useRef<boolean | undefined>(undefined);
+	const previousStartMaxOffsetRef = useRef(maxOffset);
 	useEffect(() => {
 		const inZone = maxOffset > 0 && scroll.offset <= threshold;
 		const wasInZone = inReachStartZoneRef.current;
+		const overflowAppeared = previousStartMaxOffsetRef.current === 0 && maxOffset > 0;
+		previousStartMaxOffsetRef.current = maxOffset;
 		inReachStartZoneRef.current = inZone;
-		if (wasInZone !== undefined && inZone && !wasInZone) {
+		if (wasInZone !== undefined && !overflowAppeared && inZone && !wasInZone) {
 			onReachStartRef.current?.();
 		}
 	}, [scroll.offset, threshold, maxOffset]);

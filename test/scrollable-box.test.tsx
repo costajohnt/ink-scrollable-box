@@ -1869,6 +1869,96 @@ describe('ScrollableBox — onReachEnd / onReachStart', () => {
 		expect(onReachStart).toHaveBeenCalledTimes(1);
 		instance.unmount();
 	});
+
+	it('onReachStart does not fire when content grows into overflow while parked at the top', async () => {
+		const onReachStart = vi.fn();
+
+		function GrowIntoOverflow({lineCount}: {lineCount: number}) {
+			return (
+				<ScrollableBox
+					height={5}
+					lines={makeLines(lineCount)}
+					onReachStart={onReachStart}
+					reachThreshold={3}
+					showScrollbar={false}
+					showIndicators={false}
+				/>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+		await React.act(async () => {
+			instance = render(<GrowIntoOverflow lineCount={3} />); // fits: no overflow, maxOffset 0
+		});
+		await tick();
+
+		// Content streams in past the viewport while the user is parked at the top.
+		await React.act(async () => {
+			instance.rerender(<GrowIntoOverflow lineCount={20} />);
+		});
+		await tick();
+		await tick();
+
+		// Regression: overflow appearing (maxOffset 0 -> positive) is not a scroll
+		// into the zone, so onReachStart must not fire.
+		expect(onReachStart).not.toHaveBeenCalled();
+
+		// A real scroll away from the top and back fires exactly once.
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		for (let i = 0; i < 8; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		for (let i = 0; i < 8; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write('\u001B[A'); // arrow up
+			});
+		}
+
+		expect(onReachStart).toHaveBeenCalledTimes(1);
+		instance.unmount();
+	});
+
+	it('onReachEnd does not fire when content grows into a small overflow while parked at the top', async () => {
+		const onReachEnd = vi.fn();
+
+		function GrowIntoSmallOverflow({lineCount}: {lineCount: number}) {
+			return (
+				<ScrollableBox
+					height={5}
+					lines={makeLines(lineCount)}
+					onReachEnd={onReachEnd}
+					reachThreshold={5}
+					showScrollbar={false}
+					showIndicators={false}
+				/>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+		await React.act(async () => {
+			instance = render(<GrowIntoSmallOverflow lineCount={3} />); // maxOffset 0
+		});
+		await tick();
+
+		// Grow to a small overflow: maxOffset 3 with threshold 5 puts offset 0 in
+		// the end zone. Overflow appearing must not fire onReachEnd.
+		await React.act(async () => {
+			instance.rerender(<GrowIntoSmallOverflow lineCount={8} />);
+		});
+		await tick();
+		await tick();
+
+		expect(onReachEnd).not.toHaveBeenCalled();
+		instance.unmount();
+	});
 });
 
 describe('ScrollableBox — content/viewport/item callbacks', () => {
