@@ -22,9 +22,10 @@ type ValidatePropsInput = {
 	children?: React.ReactNode;
 	overscan?: number;
 	reachThreshold?: number;
+	initialOffset?: number;
 };
 
-function validateProps({height, lines, children, overscan, reachThreshold}: ValidatePropsInput) {
+function validateProps({height, lines, children, overscan, reachThreshold, initialOffset}: ValidatePropsInput) {
 	if (lines !== undefined && children !== undefined) {
 		throw new Error('ScrollableBox: Provide either `lines` or `children`, not both.');
 	}
@@ -43,6 +44,10 @@ function validateProps({height, lines, children, overscan, reachThreshold}: Vali
 
 	if (reachThreshold !== undefined && (reachThreshold < 0 || !Number.isFinite(reachThreshold))) {
 		throw new Error(`ScrollableBox: \`reachThreshold\` must be a non-negative number, got ${reachThreshold}.`);
+	}
+
+	if (initialOffset !== undefined && (initialOffset < 0 || !Number.isFinite(initialOffset))) {
+		throw new Error(`ScrollableBox: \`initialOffset\` must be a non-negative finite number, got ${initialOffset}.`);
 	}
 }
 
@@ -349,7 +354,7 @@ function ScrollableBoxRender(
 	} = resolveProps(props);
 
 	validateProps({
-		height, lines, children, overscan, reachThreshold,
+		height, lines, children, overscan, reachThreshold, initialOffset,
 	});
 
 	const childrenArray = useMemo(

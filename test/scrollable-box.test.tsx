@@ -286,6 +286,53 @@ describe('ScrollableBox — followOutput', () => {
 		expect(instance.lastFrame()!).toContain('Line 15');
 		instance.unmount();
 	});
+
+	it('initialOffset pins to the bottom and followOutput keeps it there without firing onReachEnd', async () => {
+		const onReachEnd = vi.fn();
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<ScrollableBox
+					height={5}
+					lines={makeLines(10)}
+					initialOffset={5} // maxOffset for 10 lines = 5, so start pinned at the bottom
+					followOutput
+					onReachEnd={onReachEnd}
+					showScrollbar={false}
+					showIndicators={false}
+				/>,
+			);
+		});
+		await tick();
+
+		// Starts at the bottom (lines 6-10) and must not fire onReachEnd on mount.
+		expect(instance.lastFrame()!).toContain('Line 10');
+		expect(onReachEnd).not.toHaveBeenCalled();
+
+		// Append content: followOutput keeps the viewport pinned to the new bottom.
+		// onReachEnd is edge-triggered and stays latched while pinned, so it must
+		// not re-fire.
+		await React.act(async () => {
+			instance.rerender(
+				<ScrollableBox
+					height={5}
+					lines={makeLines(15)}
+					initialOffset={5}
+					followOutput
+					onReachEnd={onReachEnd}
+					showScrollbar={false}
+					showIndicators={false}
+				/>,
+			);
+		});
+		await tick();
+		await tick();
+
+		expect(instance.lastFrame()!).toContain('Line 15');
+		expect(onReachEnd).not.toHaveBeenCalled();
+		instance.unmount();
+	});
 });
 
 describe('ScrollableBox — ANSI codes in lines', () => {
@@ -1041,6 +1088,30 @@ describe('ScrollableBox — initialOffset', () => {
 		// maxOffset = 20 - 5 = 15, so clamped to 15 => lines 16-20 visible.
 		expect(frame).toContain('Line 16');
 		expect(frame).toContain('Line 20');
+		instance.unmount();
+	});
+
+	it('rounds a fractional initialOffset', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					initialOffset={2.7}
+					showScrollbar={false}
+					showIndicators={false}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// 2.7 rounds to 3 => lines 4-8 visible.
+		expect(frame).toContain('Line 4');
+		expect(frame).toContain('Line 8');
+		expect(frame).not.toContain('Line 3');
 		instance.unmount();
 	});
 });
@@ -1931,6 +2002,18 @@ describe('ScrollableBox — prop validation: overscan and reachThreshold', () =>
 		expect(() => {
 			renderFn({height: 5, lines: [], reachThreshold: -1}, null);
 		}).toThrow('`reachThreshold` must be a non-negative number');
+	});
+
+	it('throws for negative initialOffset', () => {
+		expect(() => {
+			renderFn({height: 5, lines: [], initialOffset: -1}, null);
+		}).toThrow('`initialOffset` must be a non-negative finite number');
+	});
+
+	it('throws for non-finite initialOffset', () => {
+		expect(() => {
+			renderFn({height: 5, lines: [], initialOffset: Number.POSITIVE_INFINITY}, null);
+		}).toThrow('`initialOffset` must be a non-negative finite number');
 	});
 });
 

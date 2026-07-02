@@ -47,7 +47,13 @@ export type UseScrollableOptions = {
   scrollStep?: number;
   /** Auto-scroll to bottom when contentHeight grows (default: false) */
   followOutput?: boolean;
-  /** Starting scroll position (default: 0) */
+  /**
+   * Starting scroll position (default: 0). Applied once when the hook mounts,
+   * against the `contentHeight` known at that moment, and rounded/clamped to a
+   * valid integer offset. It does not re-apply when `contentHeight` grows later
+   * (async data, measured children), so it cannot pin to a not-yet-known
+   * bottom. For tailing growing content, use `followOutput` instead.
+   */
   initialOffset?: number;
   /** External controlled offset. When provided, overrides internal state. */
   controlledOffset?: number;
@@ -124,8 +130,11 @@ export type ScrollableBoxProps = {
   followOutput?: boolean;
   /**
    * Starting scroll offset for uncontrolled mode (default: 0). Ignored when
-   * `offset` (controlled mode) is provided. Useful for pinning a log view to
-   * the bottom on mount.
+   * `offset` (controlled mode) is provided. Applied once against the content
+   * height known at mount and rounded/clamped to a valid integer, so it does
+   * not track content that loads or is measured after mount (async data,
+   * `measureChildren`). To keep a growing log pinned to the bottom, use
+   * `followOutput` instead.
    */
   initialOffset?: number;
   /** Lines per arrow key press (default: 1) */
@@ -193,9 +202,20 @@ export type ScrollableBoxProps = {
   onViewportSizeChange?: (height: number, previousHeight: number) => void;
   /** Called when a measured child's height changes (requires measureChildren) */
   onItemHeightChange?: (index: number, height: number, previousHeight: number) => void;
-  /** Called when scroll position is within `reachThreshold` lines of the bottom. Useful for loading more content. */
+  /**
+   * Called when the scroll position enters within `reachThreshold` lines of the
+   * bottom. Useful for loading more content. Edge-triggered: it fires once per
+   * entry into the zone and re-arms only after the offset leaves it, so it will
+   * not fire on mount and will not re-fire while the offset stays pinned to the
+   * bottom (e.g. under `followOutput` during a continuous append stream).
+   */
   onReachEnd?: () => void;
-  /** Called when scroll position is within `reachThreshold` lines of the top. Useful for loading earlier content. */
+  /**
+   * Called when the scroll position enters within `reachThreshold` lines of the
+   * top. Useful for loading earlier content. Edge-triggered: fires once per
+   * entry into the zone and re-arms only after the offset leaves it (does not
+   * fire on mount).
+   */
   onReachStart?: () => void;
   /** Number of lines from the edge to trigger onReachEnd/onReachStart (default: 5) */
   reachThreshold?: number;

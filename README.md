@@ -226,12 +226,14 @@ render(<App />);
 | `lines` | `string[]` | -- | String content (mutually exclusive with `children`) |
 | `children` | `ReactNode` | -- | React node content (mutually exclusive with `lines`) |
 | `followOutput` | `boolean` | `false` | Auto-scroll to bottom when content grows |
-| `initialOffset` | `number` | `0` | Starting scroll offset in uncontrolled mode (ignored when `offset` is set) |
+| `initialOffset` | `number` | `0` | Starting scroll offset in uncontrolled mode (ignored when `offset` is set). Applied once against the content height known at mount; see note below |
 | `scrollStep` | `number` | `1` | Lines per arrow key / j/k press |
 | `border` | `boolean` | `false` | Render a rounded border around the viewport |
 | `overscan` | `number` | `0` | Extra items to pre-render above/below viewport |
 | `measureChildren` | `boolean` | `false` | Measure actual heights of multi-line children (O(n) render) |
 | `debug` | `boolean` | `false` | Disable overflow clipping for layout debugging |
+
+> **`initialOffset` caveat:** it is applied once at mount against the content height known at that moment and rounded/clamped to a valid offset. It does not track content that loads or is measured after mount (async data or `measureChildren`, where heights are unknown at mount), so it cannot pin to a not-yet-known bottom. To keep a growing log pinned to the bottom, use `followOutput`.
 
 #### Scrollbar Props
 
@@ -275,9 +277,11 @@ render(<App />);
 | `onContentHeightChange` | `(height: number, previousHeight: number) => void` | -- | Called when total content height changes |
 | `onViewportSizeChange` | `(height: number, previousHeight: number) => void` | -- | Called when viewport height changes |
 | `onItemHeightChange` | `(index: number, height: number, previousHeight: number) => void` | -- | Called when a measured child's height changes (requires `measureChildren`) |
-| `onReachEnd` | `() => void` | -- | Called when scroll is within `reachThreshold` of the bottom |
-| `onReachStart` | `() => void` | -- | Called when scroll is within `reachThreshold` of the top |
+| `onReachEnd` | `() => void` | -- | Called when scroll enters within `reachThreshold` of the bottom (edge-triggered; see note) |
+| `onReachStart` | `() => void` | -- | Called when scroll enters within `reachThreshold` of the top (edge-triggered; see note) |
 | `reachThreshold` | `number` | `5` | Lines from edge to trigger `onReachEnd` / `onReachStart` |
+
+> **`onReachEnd` / `onReachStart` are edge-triggered:** each fires once when the offset crosses into its threshold zone and re-arms only after the offset leaves the zone. They do not fire on mount. In particular, when `followOutput` keeps the viewport pinned to the bottom across a continuous append stream, the offset never leaves the end zone, so `onReachEnd` fires once and does not re-fire while pinned.
 
 #### Controlled Mode Props
 
