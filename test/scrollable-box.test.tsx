@@ -1546,6 +1546,170 @@ describe('ScrollableBox — onReachEnd / onReachStart', () => {
 		expect(onReachEnd).toHaveBeenCalled();
 		instance.unmount();
 	});
+
+	it('onReachStart fires once on entering the top zone and re-arms after leaving', async () => {
+		const onReachStart = vi.fn();
+		const lines = makeLines(20); // maxOffset = 15
+
+		function LatchStartTest() {
+			const [currentOffset, setCurrentOffset] = useState(0);
+			return (
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					offset={currentOffset}
+					onOffsetChange={setCurrentOffset}
+					onReachStart={onReachStart}
+					reachThreshold={3}
+					showScrollbar={false}
+					showIndicators={false}
+				/>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(<LatchStartTest />);
+		});
+
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		// Leave the top zone (scroll to the bottom) so the latch is re-armed.
+		for (let i = 0; i < 15; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		onReachStart.mockClear();
+
+		// Scroll back to the top: fires exactly once on entering the zone
+		// (offset <= 3), not on every tick from 3..0.
+		for (let i = 0; i < 15; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write('\u001B[A'); // arrow up
+			});
+		}
+
+		expect(onReachStart).toHaveBeenCalledTimes(1);
+
+		// Leave the zone again then re-enter — the callback fires a second time.
+		for (let i = 0; i < 6; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		for (let i = 0; i < 6; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write('\u001B[A'); // arrow up
+			});
+		}
+
+		expect(onReachStart).toHaveBeenCalledTimes(2);
+		instance.unmount();
+	});
+
+	it('initialOffset in the end zone does not fire onReachEnd on mount, then fires on a real re-entry', async () => {
+		const onReachEnd = vi.fn();
+		const lines = makeLines(20); // maxOffset = 15, end zone (threshold 3) is offset >= 12
+
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					initialOffset={100} // clamps to 15, already inside the end zone
+					onReachEnd={onReachEnd}
+					reachThreshold={3}
+					showScrollbar={false}
+					showIndicators={false}
+				/>,
+			);
+		});
+		await tick();
+
+		// Regression: starting inside the zone via initialOffset must not fire on mount.
+		expect(onReachEnd).not.toHaveBeenCalled();
+
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		// Leave the zone (offset 15 -> 10), then re-enter (10 -> 15): one real fire.
+		for (let i = 0; i < 5; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write('\u001B[A'); // arrow up
+			});
+		}
+
+		for (let i = 0; i < 5; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		expect(onReachEnd).toHaveBeenCalledTimes(1);
+		instance.unmount();
+	});
+
+	it('initialOffset in the top zone does not fire onReachStart on mount, then fires on a real re-entry', async () => {
+		const onReachStart = vi.fn();
+		const lines = makeLines(20); // maxOffset = 15, top zone (threshold 5) is offset <= 5
+
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					initialOffset={2} // already inside the top zone
+					onReachStart={onReachStart}
+					reachThreshold={5}
+					showScrollbar={false}
+					showIndicators={false}
+				/>,
+			);
+		});
+		await tick();
+
+		// Regression: starting inside the zone via initialOffset must not fire on mount.
+		expect(onReachStart).not.toHaveBeenCalled();
+
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		// Leave the zone (offset 2 -> 10), then re-enter (10 -> 2): one real fire.
+		for (let i = 0; i < 8; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		for (let i = 0; i < 8; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write('\u001B[A'); // arrow up
+			});
+		}
+
+		expect(onReachStart).toHaveBeenCalledTimes(1);
+		instance.unmount();
+	});
 });
 
 describe('ScrollableBox — content/viewport/item callbacks', () => {

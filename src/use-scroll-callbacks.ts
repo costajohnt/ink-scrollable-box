@@ -118,36 +118,35 @@ export function useScrollCallbacks({
 		onReachStartRef.current = onReachStart;
 	}, [onReachStart]);
 
-	const hasScrolledRef = useRef(false);
-	useEffect(() => {
-		if (scroll.offset !== 0 || hasScrolledRef.current) {
-			hasScrolledRef.current = true;
-		}
-	}, [scroll.offset]);
-
 	const threshold = reachThreshold ?? 5;
 	const maxOffset = Math.max(0, scroll.contentHeight - scroll.viewportHeight);
 
 	// Edge-latched: fire only on the transition INTO the threshold zone and
 	// re-arm when the offset leaves it. Without this, a callback would fire on
 	// every scroll tick while inside the zone (load-more storms).
-	const inReachEndZoneRef = useRef(false);
+	//
+	// The latch starts `undefined` and is seeded to the mount-time zone state on
+	// its first run without firing, so a non-zero `initialOffset` that lands the
+	// viewport already inside a zone does not fire spuriously on mount. The
+	// callback is edge-triggered thereafter: it fires only when the offset
+	// crosses from outside the zone to inside.
+	const inReachEndZoneRef = useRef<boolean | undefined>(undefined);
 	useEffect(() => {
 		const inZone = maxOffset > 0 && scroll.offset >= maxOffset - threshold;
-		if (inZone && !inReachEndZoneRef.current && hasScrolledRef.current) {
+		const wasInZone = inReachEndZoneRef.current;
+		inReachEndZoneRef.current = inZone;
+		if (wasInZone !== undefined && inZone && !wasInZone) {
 			onReachEndRef.current?.();
 		}
-
-		inReachEndZoneRef.current = inZone;
 	}, [scroll.offset, maxOffset, threshold]);
 
-	const inReachStartZoneRef = useRef(false);
+	const inReachStartZoneRef = useRef<boolean | undefined>(undefined);
 	useEffect(() => {
 		const inZone = maxOffset > 0 && scroll.offset <= threshold;
-		if (inZone && !inReachStartZoneRef.current && hasScrolledRef.current) {
+		const wasInZone = inReachStartZoneRef.current;
+		inReachStartZoneRef.current = inZone;
+		if (wasInZone !== undefined && inZone && !wasInZone) {
 			onReachStartRef.current?.();
 		}
-
-		inReachStartZoneRef.current = inZone;
 	}, [scroll.offset, threshold, maxOffset]);
 }
