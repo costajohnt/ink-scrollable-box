@@ -8,7 +8,7 @@ import {Text} from 'ink';
 import {ScrollableBox} from '../src/scrollable-box.js';
 import type {ScrollableBoxRef} from '../src/types.js';
 import {
-	tick, write, focus, makeLines,
+	tick, write, focus, makeLines, stripAnsi,
 } from './helpers.js';
 
 const arrowDown = '\u001B[B';
@@ -86,7 +86,9 @@ describe('ScrollableBox — lines mode', () => {
 		const {lastFrame, unmount} = render(
 			<ScrollableBox height={5} width={30} lines={lines}/>,
 		);
-		const frame = lastFrame()!;
+		// Strip ANSI so the width check counts visible columns, not color bytes
+		// (raw SGR codes inflate line length under FORCE_COLOR).
+		const frame = stripAnsi(lastFrame()!);
 		for (const line of frame.split('\n').filter(l => l.length > 0)) {
 			expect(line.length).toBeLessThanOrEqual(30);
 		}
@@ -122,7 +124,8 @@ describe('ScrollableBox — lines mode', () => {
 		);
 		await focus(instance.stdin);
 		await write(instance.stdin, arrowDown);
-		const frame = instance.lastFrame()!;
+		// Strip ANSI so the indicator glyphs match regardless of FORCE_COLOR.
+		const frame = stripAnsi(instance.lastFrame()!);
 		expect(frame).toContain('▲');
 		expect(frame).toContain('▼');
 		instance.unmount();
@@ -281,6 +284,53 @@ describe('ScrollableBox — followOutput', () => {
 		await tick();
 		await tick();
 		expect(instance.lastFrame()!).toContain('Line 15');
+		instance.unmount();
+	});
+
+	it('initialOffset pins to the bottom and followOutput keeps it there without firing onReachEnd', async () => {
+		const onReachEnd = vi.fn();
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<ScrollableBox
+					height={5}
+					lines={makeLines(10)}
+					initialOffset={5} // maxOffset for 10 lines = 5, so start pinned at the bottom
+					followOutput
+					onReachEnd={onReachEnd}
+					showScrollbar={false}
+					showIndicators={false}
+				/>,
+			);
+		});
+		await tick();
+
+		// Starts at the bottom (lines 6-10) and must not fire onReachEnd on mount.
+		expect(instance.lastFrame()!).toContain('Line 10');
+		expect(onReachEnd).not.toHaveBeenCalled();
+
+		// Append content: followOutput keeps the viewport pinned to the new bottom.
+		// onReachEnd is edge-triggered and stays latched while pinned, so it must
+		// not re-fire.
+		await React.act(async () => {
+			instance.rerender(
+				<ScrollableBox
+					height={5}
+					lines={makeLines(15)}
+					initialOffset={5}
+					followOutput
+					onReachEnd={onReachEnd}
+					showScrollbar={false}
+					showIndicators={false}
+				/>,
+			);
+		});
+		await tick();
+		await tick();
+
+		expect(instance.lastFrame()!).toContain('Line 15');
+		expect(onReachEnd).not.toHaveBeenCalled();
 		instance.unmount();
 	});
 });
@@ -839,6 +889,140 @@ describe('ScrollableBox — measureChildren', () => {
 		expect(frame).toContain('Line 5');
 		unmount();
 	});
+
+	it('recomputes total content height when a child grows in place (stable count)', async () => {
+		// Regression: heights live in heightsRef (a ref); when a child's measured
+		// height changes without the child count changing, contentHeight must still
+		// update. Use a generous, unclipped (debug) viewport so measureElement
+		// reports true multi-line heights deterministically.
+		const outerRef = React.createRef<ScrollableBoxRef>();
+
+		function GrowTest({first}: {first: string}) {
+			return (
+				<ScrollableBox
+					ref={outerRef}
+					height={20}
+					debug
+					measureChildren
+					showScrollbar={false}
+					showIndicators={false}
+				>
+					<Text>{first}</Text>
+					<Text>Second</Text>
+				</ScrollableBox>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+		await React.act(async () => {
+			instance = render(<GrowTest first='X' />);
+		});
+		await tick();
+		await tick();
+
+		// Both children are 1 line tall.
+		expect(outerRef.current!.getScrollState().contentHeight).toBe(2);
+
+		// First child grows from 1 to 5 lines; child count stays 2.
+		await React.act(async () => {
+			instance.rerender(<GrowTest first={'A\nB\nC\nD\nE'} />);
+		});
+		await tick();
+		await tick();
+
+		expect(outerRef.current!.getItemHeight(0)).toBe(5);
+		// contentHeight must reflect the in-place growth: 5 + 1 = 6.
+		expect(outerRef.current!.getScrollState().contentHeight).toBe(6);
+		instance.unmount();
+	});
+
+	it('recomputes contentHeight to 0 when all measured children collapse', async () => {
+		// Regression: the recompute must distinguish "not measured yet" from a
+		// genuine collapse to total height 0. An empty <Text> measures 0 lines;
+		// with a `total > 0` guard, contentHeight would stay stale (phantom
+		// overflow). Generous debug viewport for deterministic measurement.
+		const outerRef = React.createRef<ScrollableBoxRef>();
+
+		function CollapseTest({collapsed}: {collapsed: boolean}) {
+			const content = collapsed ? '' : 'A\nB\nC\nD\nE';
+			return (
+				<ScrollableBox
+					ref={outerRef}
+					height={20}
+					debug
+					measureChildren
+					showScrollbar={false}
+					showIndicators={false}
+				>
+					<Text>{content}</Text>
+					<Text>{content}</Text>
+				</ScrollableBox>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+		await React.act(async () => {
+			instance = render(<CollapseTest collapsed={false} />);
+		});
+		await tick();
+		await tick();
+
+		// Two 5-line children: 5 + 5 = 10.
+		expect(outerRef.current!.getScrollState().contentHeight).toBe(10);
+
+		// Both children collapse to 0 lines; total is a legitimate 0.
+		await React.act(async () => {
+			instance.rerender(<CollapseTest collapsed />);
+		});
+		await tick();
+		await tick();
+
+		expect(outerRef.current!.getScrollState().contentHeight).toBe(0);
+		instance.unmount();
+	});
+
+	it('drops contentHeight when a grown child is removed', async () => {
+		// Regression coverage for child removal + height aggregation together:
+		// grow child 0 to 5 lines (total 6), then remove it and assert the total
+		// falls to the remaining child's height.
+		const outerRef = React.createRef<ScrollableBoxRef>();
+
+		function RemoveTest({showTall}: {showTall: boolean}) {
+			return (
+				<ScrollableBox
+					ref={outerRef}
+					height={20}
+					debug
+					measureChildren
+					showScrollbar={false}
+					showIndicators={false}
+				>
+					{showTall ? <Text>{'A\nB\nC\nD\nE'}</Text> : null}
+					<Text>Second</Text>
+				</ScrollableBox>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+		await React.act(async () => {
+			instance = render(<RemoveTest showTall />);
+		});
+		await tick();
+		await tick();
+
+		// 5-line child + 1-line child = 6.
+		expect(outerRef.current!.getScrollState().contentHeight).toBe(6);
+
+		// Remove the tall child; only the 1-line "Second" remains.
+		await React.act(async () => {
+			instance.rerender(<RemoveTest showTall={false} />);
+		});
+		await tick();
+		await tick();
+
+		expect(outerRef.current!.getScrollState().contentHeight).toBe(1);
+		instance.unmount();
+	});
 });
 
 describe('ScrollableBox — controlled mode', () => {
@@ -943,6 +1127,79 @@ describe('ScrollableBox — controlled mode', () => {
 		// maxOffset = 20 - 5 = 15, so clamped to 15 => lines 16-20 visible
 		expect(frame).toContain('Line 16');
 		expect(frame).toContain('Line 20');
+		instance.unmount();
+	});
+});
+
+describe('ScrollableBox — initialOffset', () => {
+	it('starts uncontrolled scroll at the given initialOffset', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					initialOffset={10}
+					showScrollbar={false}
+					showIndicators={false}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// initialOffset=10 means lines 11-15 are visible on mount.
+		expect(frame).toContain('Line 11');
+		expect(frame).toContain('Line 15');
+		expect(frame).not.toContain('Line 10');
+		instance.unmount();
+	});
+
+	it('clamps initialOffset to the valid range', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					initialOffset={100}
+					showScrollbar={false}
+					showIndicators={false}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// maxOffset = 20 - 5 = 15, so clamped to 15 => lines 16-20 visible.
+		expect(frame).toContain('Line 16');
+		expect(frame).toContain('Line 20');
+		instance.unmount();
+	});
+
+	it('rounds a fractional initialOffset', async () => {
+		const lines = makeLines(20);
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					initialOffset={2.7}
+					showScrollbar={false}
+					showIndicators={false}
+				/>,
+			);
+		});
+
+		const frame = instance.lastFrame()!;
+		// 2.7 rounds to 3 => lines 4-8 visible.
+		expect(frame).toContain('Line 4');
+		expect(frame).toContain('Line 8');
+		expect(frame).not.toContain('Line 3');
 		instance.unmount();
 	});
 });
@@ -1339,6 +1596,70 @@ describe('ScrollableBox — onReachEnd / onReachStart', () => {
 		instance.unmount();
 	});
 
+	it('onReachEnd fires once on entering the zone and re-arms after leaving', async () => {
+		const onReachEnd = vi.fn();
+		const lines = makeLines(20); // maxOffset = 15
+
+		function LatchTest() {
+			const [currentOffset, setCurrentOffset] = useState(0);
+			return (
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					offset={currentOffset}
+					onOffsetChange={setCurrentOffset}
+					onReachEnd={onReachEnd}
+					reachThreshold={3}
+					showScrollbar={false}
+					showIndicators={false}
+				/>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(<LatchTest />);
+		});
+
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		onReachEnd.mockClear();
+
+		// Zone is offset >= maxOffset - threshold = 12. Scroll all the way to the
+		// bottom (offset 15). The callback must fire exactly ONCE — on entering
+		// the zone at offset 12 — not on every tick from 12..15.
+		for (let i = 0; i < 15; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		expect(onReachEnd).toHaveBeenCalledTimes(1);
+
+		// Leave the zone (scroll back above offset 12) to re-arm the latch.
+		for (let i = 0; i < 5; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write('\u001B[A'); // arrow up
+			});
+		}
+
+		// Re-enter the zone — the callback fires a second time.
+		for (let i = 0; i < 5; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		expect(onReachEnd).toHaveBeenCalledTimes(2);
+		instance.unmount();
+	});
+
 	it('custom reachThreshold works', async () => {
 		const onReachEnd = vi.fn();
 		const lines = makeLines(20);
@@ -1382,6 +1703,260 @@ describe('ScrollableBox — onReachEnd / onReachStart', () => {
 		}
 
 		expect(onReachEnd).toHaveBeenCalled();
+		instance.unmount();
+	});
+
+	it('onReachStart fires once on entering the top zone and re-arms after leaving', async () => {
+		const onReachStart = vi.fn();
+		const lines = makeLines(20); // maxOffset = 15
+
+		function LatchStartTest() {
+			const [currentOffset, setCurrentOffset] = useState(0);
+			return (
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					offset={currentOffset}
+					onOffsetChange={setCurrentOffset}
+					onReachStart={onReachStart}
+					reachThreshold={3}
+					showScrollbar={false}
+					showIndicators={false}
+				/>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(<LatchStartTest />);
+		});
+
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		// Leave the top zone (scroll to the bottom) so the latch is re-armed.
+		for (let i = 0; i < 15; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		onReachStart.mockClear();
+
+		// Scroll back to the top: fires exactly once on entering the zone
+		// (offset <= 3), not on every tick from 3..0.
+		for (let i = 0; i < 15; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write('\u001B[A'); // arrow up
+			});
+		}
+
+		expect(onReachStart).toHaveBeenCalledTimes(1);
+
+		// Leave the zone again then re-enter — the callback fires a second time.
+		for (let i = 0; i < 6; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		for (let i = 0; i < 6; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write('\u001B[A'); // arrow up
+			});
+		}
+
+		expect(onReachStart).toHaveBeenCalledTimes(2);
+		instance.unmount();
+	});
+
+	it('initialOffset in the end zone does not fire onReachEnd on mount, then fires on a real re-entry', async () => {
+		const onReachEnd = vi.fn();
+		const lines = makeLines(20); // maxOffset = 15, end zone (threshold 3) is offset >= 12
+
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					initialOffset={100} // clamps to 15, already inside the end zone
+					onReachEnd={onReachEnd}
+					reachThreshold={3}
+					showScrollbar={false}
+					showIndicators={false}
+				/>,
+			);
+		});
+		await tick();
+
+		// Regression: starting inside the zone via initialOffset must not fire on mount.
+		expect(onReachEnd).not.toHaveBeenCalled();
+
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		// Leave the zone (offset 15 -> 10), then re-enter (10 -> 15): one real fire.
+		for (let i = 0; i < 5; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write('\u001B[A'); // arrow up
+			});
+		}
+
+		for (let i = 0; i < 5; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		expect(onReachEnd).toHaveBeenCalledTimes(1);
+		instance.unmount();
+	});
+
+	it('initialOffset in the top zone does not fire onReachStart on mount, then fires on a real re-entry', async () => {
+		const onReachStart = vi.fn();
+		const lines = makeLines(20); // maxOffset = 15, top zone (threshold 5) is offset <= 5
+
+		let instance!: ReturnType<typeof render>;
+
+		await React.act(async () => {
+			instance = render(
+				<ScrollableBox
+					height={5}
+					lines={lines}
+					initialOffset={2} // already inside the top zone
+					onReachStart={onReachStart}
+					reachThreshold={5}
+					showScrollbar={false}
+					showIndicators={false}
+				/>,
+			);
+		});
+		await tick();
+
+		// Regression: starting inside the zone via initialOffset must not fire on mount.
+		expect(onReachStart).not.toHaveBeenCalled();
+
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		// Leave the zone (offset 2 -> 10), then re-enter (10 -> 2): one real fire.
+		for (let i = 0; i < 8; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		for (let i = 0; i < 8; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write('\u001B[A'); // arrow up
+			});
+		}
+
+		expect(onReachStart).toHaveBeenCalledTimes(1);
+		instance.unmount();
+	});
+
+	it('onReachStart does not fire when content grows into overflow while parked at the top', async () => {
+		const onReachStart = vi.fn();
+
+		function GrowIntoOverflow({lineCount}: {lineCount: number}) {
+			return (
+				<ScrollableBox
+					height={5}
+					lines={makeLines(lineCount)}
+					onReachStart={onReachStart}
+					reachThreshold={3}
+					showScrollbar={false}
+					showIndicators={false}
+				/>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+		await React.act(async () => {
+			instance = render(<GrowIntoOverflow lineCount={3} />); // fits: no overflow, maxOffset 0
+		});
+		await tick();
+
+		// Content streams in past the viewport while the user is parked at the top.
+		await React.act(async () => {
+			instance.rerender(<GrowIntoOverflow lineCount={20} />);
+		});
+		await tick();
+		await tick();
+
+		// Regression: overflow appearing (maxOffset 0 -> positive) is not a scroll
+		// into the zone, so onReachStart must not fire.
+		expect(onReachStart).not.toHaveBeenCalled();
+
+		// A real scroll away from the top and back fires exactly once.
+		await React.act(async () => {
+			instance.stdin.write('\t');
+		});
+
+		for (let i = 0; i < 8; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write(arrowDown);
+			});
+		}
+
+		for (let i = 0; i < 8; i++) {
+			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
+			await React.act(async () => {
+				instance.stdin.write('\u001B[A'); // arrow up
+			});
+		}
+
+		expect(onReachStart).toHaveBeenCalledTimes(1);
+		instance.unmount();
+	});
+
+	it('onReachEnd does not fire when content grows into a small overflow while parked at the top', async () => {
+		const onReachEnd = vi.fn();
+
+		function GrowIntoSmallOverflow({lineCount}: {lineCount: number}) {
+			return (
+				<ScrollableBox
+					height={5}
+					lines={makeLines(lineCount)}
+					onReachEnd={onReachEnd}
+					reachThreshold={5}
+					showScrollbar={false}
+					showIndicators={false}
+				/>
+			);
+		}
+
+		let instance!: ReturnType<typeof render>;
+		await React.act(async () => {
+			instance = render(<GrowIntoSmallOverflow lineCount={3} />); // maxOffset 0
+		});
+		await tick();
+
+		// Grow to a small overflow: maxOffset 3 with threshold 5 puts offset 0 in
+		// the end zone. Overflow appearing must not fire onReachEnd.
+		await React.act(async () => {
+			instance.rerender(<GrowIntoSmallOverflow lineCount={8} />);
+		});
+		await tick();
+		await tick();
+
+		expect(onReachEnd).not.toHaveBeenCalled();
 		instance.unmount();
 	});
 });
@@ -1605,6 +2180,18 @@ describe('ScrollableBox — prop validation: overscan and reachThreshold', () =>
 		expect(() => {
 			renderFn({height: 5, lines: [], reachThreshold: -1}, null);
 		}).toThrow('`reachThreshold` must be a non-negative number');
+	});
+
+	it('throws for negative initialOffset', () => {
+		expect(() => {
+			renderFn({height: 5, lines: [], initialOffset: -1}, null);
+		}).toThrow('`initialOffset` must be a non-negative finite number');
+	});
+
+	it('throws for non-finite initialOffset', () => {
+		expect(() => {
+			renderFn({height: 5, lines: [], initialOffset: Number.POSITIVE_INFINITY}, null);
+		}).toThrow('`initialOffset` must be a non-negative finite number');
 	});
 });
 

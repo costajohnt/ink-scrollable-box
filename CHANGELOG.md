@@ -1,5 +1,28 @@
 # Changelog
 
+## 1.1.1
+
+Bug fixes and maintenance.
+
+### Fixed
+
+- Require `ink >= 6` and `react >= 19` as peer dependencies. The component calls Ink 6's `useIsScreenReaderEnabled` hook, which does not exist in Ink 4/5 and crashed at runtime.
+- `measureChildren`: recompute total content height when a child's measured height changes in place at a stable child count (previously `contentHeight` stayed stale).
+- `onReachEnd` / `onReachStart` now fire only on the transition into the threshold zone and re-arm on leaving, instead of firing on every scroll tick inside the zone.
+- CJS consumers now resolve their own type declarations (`dist/index.d.cts`) via per-condition `exports`.
+
+### Added
+
+- `initialOffset` prop on `ScrollableBox` to set the starting scroll position in uncontrolled mode.
+
+## 1.1.0 (2026-03-31)
+
+Accessibility.
+
+### Added
+
+- Screen-reader support: scroll position announcements (via Ink's `useIsScreenReaderEnabled`), an accessible label for the scrollable region (`ariaLabel` prop), and `aria-hidden` on decorative scrollbar and indicator elements.
+
 ## 1.0.0
 
 Initial release.

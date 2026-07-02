@@ -22,9 +22,10 @@ type ValidatePropsInput = {
 	children?: React.ReactNode;
 	overscan?: number;
 	reachThreshold?: number;
+	initialOffset?: number;
 };
 
-function validateProps({height, lines, children, overscan, reachThreshold}: ValidatePropsInput) {
+function validateProps({height, lines, children, overscan, reachThreshold, initialOffset}: ValidatePropsInput) {
 	if (lines !== undefined && children !== undefined) {
 		throw new Error('ScrollableBox: Provide either `lines` or `children`, not both.');
 	}
@@ -43,6 +44,10 @@ function validateProps({height, lines, children, overscan, reachThreshold}: Vali
 
 	if (reachThreshold !== undefined && (reachThreshold < 0 || !Number.isFinite(reachThreshold))) {
 		throw new Error(`ScrollableBox: \`reachThreshold\` must be a non-negative number, got ${reachThreshold}.`);
+	}
+
+	if (initialOffset !== undefined && (initialOffset < 0 || !Number.isFinite(initialOffset))) {
+		throw new Error(`ScrollableBox: \`initialOffset\` must be a non-negative finite number, got ${initialOffset}.`);
 	}
 }
 
@@ -257,6 +262,68 @@ function useContentHeight(
 	return measureChildren ? measuredHeight : childrenLength;
 }
 
+// True only when every child index 0..count-1 has a numeric measured height.
+// Index-based (not `heights.every`) so a hole left by remeasureItem counts as
+// unmeasured rather than being skipped.
+function allChildrenMeasured(heights: number[], count: number): boolean {
+	if (heights.length !== count) {
+		return false;
+	}
+
+	for (let i = 0; i < count; i++) {
+		if (typeof heights[i] !== 'number') {
+			return false;
+		}
+	}
+
+	return true;
+}
+
+type IndicatorsProps = {
+	showIndicators: boolean;
+	hasOverflow: boolean;
+	canScrollUp: boolean;
+	canScrollDown: boolean;
+	upIndicator: string;
+	downIndicator: string;
+};
+
+function Indicators({
+	showIndicators, hasOverflow, canScrollUp, canScrollDown, upIndicator, downIndicator,
+}: IndicatorsProps) {
+	if (!showIndicators || !hasOverflow) {
+		return null;
+	}
+
+	return (
+		<Box justifyContent='space-between' aria-hidden>
+			<Text dimColor>{canScrollUp ? upIndicator : ' '}</Text>
+			<Text dimColor>{canScrollDown ? downIndicator : ' '}</Text>
+		</Box>
+	);
+}
+
+type ScreenReaderAnnouncementProps = {
+	isScreenReaderEnabled: boolean;
+	hasOverflow: boolean;
+	isFocused: boolean;
+	positionLabel: string;
+};
+
+function ScreenReaderAnnouncement({
+	isScreenReaderEnabled, hasOverflow, isFocused, positionLabel,
+}: ScreenReaderAnnouncementProps) {
+	if (!isScreenReaderEnabled || !hasOverflow) {
+		return null;
+	}
+
+	return (
+		<Box height={0} overflowY='hidden'>
+			<Text aria-label={isFocused ? `${positionLabel}, focused` : positionLabel}>{' '}</Text>
+		</Box>
+	);
+}
+
 function ScrollableBoxRender(
 	props: ScrollableBoxProps,
 	ref: React.ForwardedRef<ScrollableBoxRef>,
@@ -267,6 +334,7 @@ function ScrollableBoxRender(
 		lines,
 		children,
 		followOutput,
+		initialOffset,
 		scrollStep,
 		border,
 		showScrollbar,
@@ -303,7 +371,7 @@ function ScrollableBoxRender(
 	} = resolveProps(props);
 
 	validateProps({
-		height, lines, children, overscan, reachThreshold,
+		height, lines, children, overscan, reachThreshold, initialOffset,
 	});
 
 	const childrenArray = useMemo(
@@ -314,6 +382,10 @@ function ScrollableBoxRender(
 	// Measurement state for variable-height children
 	const heightsRef = useRef<number[]>([]);
 	const [measuredHeight, setMeasuredHeight] = useState(childrenArray.length);
+	// Bumped whenever a child's measured height changes in place. Heights live
+	// in heightsRef (a ref), so this counter is what drives the total-height
+	// recompute effect to react to in-place growth/shrink at a stable count.
+	const [measurementVersion, setMeasurementVersion] = useState(0);
 
 	useEffect(() => {
 		if (heightsRef.current.length > childrenArray.length) {
@@ -322,13 +394,17 @@ function ScrollableBoxRender(
 	}, [childrenArray.length]);
 
 	useEffect(() => {
-		if (measureChildren && heightsRef.current.length === childrenArray.length) {
+		// Only trust the total once every child has reported a height. Checking
+		// per-index (not `total > 0`) lets a genuine collapse to 0 update
+		// contentHeight instead of leaving it stale (which would show phantom
+		// overflow), while still ignoring the not-yet-measured initial state.
+		if (measureChildren && allChildrenMeasured(heightsRef.current, childrenArray.length)) {
 			const total = heightsRef.current.reduce((sum, h) => sum + h, 0);
-			if (total !== measuredHeight && total > 0) {
+			if (total !== measuredHeight) {
 				setMeasuredHeight(total);
 			}
 		}
-	}, [measureChildren, childrenArray.length, measuredHeight]);
+	}, [measureChildren, childrenArray.length, measuredHeight, measurementVersion]);
 
 	const onItemHeightChangeRef = useRef(onItemHeightChange);
 	useEffect(() => {
@@ -338,6 +414,12 @@ function ScrollableBoxRender(
 	const onItemMeasure = useCallback((index: number, h: number) => {
 		const previous = heightsRef.current[index];
 		heightsRef.current[index] = h;
+		if (previous !== h) {
+			// Height changed (or was measured for the first time) — trigger a
+			// recompute of the total content height.
+			setMeasurementVersion(v => v + 1);
+		}
+
 		if (previous !== undefined && previous !== h) {
 			onItemHeightChangeRef.current?.(index, h, previous);
 		}
@@ -351,6 +433,7 @@ function ScrollableBoxRender(
 		viewportHeight: effectiveHeight,
 		scrollStep,
 		followOutput,
+		initialOffset,
 		controlledOffset: offset,
 		onOffsetChange,
 	});
@@ -410,24 +493,27 @@ function ScrollableBoxRender(
 		)
 		: null;
 
-	const indicators = showIndicators && hasOverflow
-		? (
-			<Box justifyContent='space-between' aria-hidden>
-				<Text dimColor>{scroll.canScrollUp ? upIndicator : ' '}</Text>
-				<Text dimColor>{scroll.canScrollDown ? downIndicator : ' '}</Text>
-			</Box>
-		)
-		: null;
+	const indicators = (
+		<Indicators
+			showIndicators={showIndicators}
+			hasOverflow={hasOverflow}
+			canScrollUp={scroll.canScrollUp}
+			canScrollDown={scroll.canScrollDown}
+			upIndicator={upIndicator}
+			downIndicator={downIndicator}
+		/>
+	);
 
 	const visibleEnd = Math.min(scroll.offset + effectiveHeight, contentHeight);
 	const positionLabel = `Showing lines ${scroll.offset + 1} to ${visibleEnd} of ${contentHeight}`;
-	const screenReaderAnnouncement = isScreenReaderEnabled && hasOverflow
-		? (
-			<Box height={0} overflowY='hidden'>
-				<Text aria-label={isFocused ? `${positionLabel}, focused` : positionLabel}>{' '}</Text>
-			</Box>
-		)
-		: null;
+	const screenReaderAnnouncement = (
+		<ScreenReaderAnnouncement
+			isScreenReaderEnabled={isScreenReaderEnabled}
+			hasOverflow={hasOverflow}
+			isFocused={isFocused}
+			positionLabel={positionLabel}
+		/>
+	);
 
 	const contentBox = (
 		<Box

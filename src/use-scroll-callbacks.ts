@@ -118,32 +118,46 @@ export function useScrollCallbacks({
 		onReachStartRef.current = onReachStart;
 	}, [onReachStart]);
 
-	const hasScrolledRef = useRef(false);
-	useEffect(() => {
-		if (scroll.offset !== 0 || hasScrolledRef.current) {
-			hasScrolledRef.current = true;
-		}
-	}, [scroll.offset]);
-
 	const threshold = reachThreshold ?? 5;
 	const maxOffset = Math.max(0, scroll.contentHeight - scroll.viewportHeight);
 
+	// Edge-latched: fire only on the transition INTO the threshold zone and
+	// re-arm when the offset leaves it. Without this, a callback would fire on
+	// every scroll tick while inside the zone (load-more storms).
+	//
+	// The latch starts `undefined` and is seeded to the mount-time zone state on
+	// its first run without firing, so a non-zero `initialOffset` that lands the
+	// viewport already inside a zone does not fire spuriously on mount. The
+	// callback is edge-triggered thereafter: it fires only when the offset
+	// crosses from outside the zone to inside.
+	//
+	// The zone can also "appear" around a stationary offset when overflow first
+	// shows up (maxOffset crosses 0 -> positive as content grows). That is a
+	// change in the zone, not a scroll into it, so it is re-seeded rather than
+	// fired — otherwise a fits-then-overflows view would fire once with no user
+	// action.
+	const inReachEndZoneRef = useRef<boolean | undefined>(undefined);
+	const previousEndMaxOffsetRef = useRef(maxOffset);
 	useEffect(() => {
-		if (!hasScrolledRef.current) {
-			return;
-		}
-
-		if (scroll.offset >= maxOffset - threshold && maxOffset > 0) {
+		const inZone = maxOffset > 0 && scroll.offset >= maxOffset - threshold;
+		const wasInZone = inReachEndZoneRef.current;
+		const overflowAppeared = previousEndMaxOffsetRef.current === 0 && maxOffset > 0;
+		previousEndMaxOffsetRef.current = maxOffset;
+		inReachEndZoneRef.current = inZone;
+		if (wasInZone !== undefined && !overflowAppeared && inZone && !wasInZone) {
 			onReachEndRef.current?.();
 		}
 	}, [scroll.offset, maxOffset, threshold]);
 
+	const inReachStartZoneRef = useRef<boolean | undefined>(undefined);
+	const previousStartMaxOffsetRef = useRef(maxOffset);
 	useEffect(() => {
-		if (!hasScrolledRef.current) {
-			return;
-		}
-
-		if (scroll.offset <= threshold && maxOffset > 0) {
+		const inZone = maxOffset > 0 && scroll.offset <= threshold;
+		const wasInZone = inReachStartZoneRef.current;
+		const overflowAppeared = previousStartMaxOffsetRef.current === 0 && maxOffset > 0;
+		previousStartMaxOffsetRef.current = maxOffset;
+		inReachStartZoneRef.current = inZone;
+		if (wasInZone !== undefined && !overflowAppeared && inZone && !wasInZone) {
 			onReachStartRef.current?.();
 		}
 	}, [scroll.offset, threshold, maxOffset]);

@@ -26,8 +26,15 @@ export function useScrollable({
 		);
 	}
 
+	if (initialOffset < 0 || !Number.isFinite(initialOffset)) {
+		throw new Error(
+			`useScrollable: \`initialOffset\` must be a non-negative finite number, got ${initialOffset}.`,
+		);
+	}
+
 	const maxOffset = Math.max(0, contentHeight - viewportHeight);
-	const [offset, setOffset] = useState(() => clamp(initialOffset, 0, maxOffset));
+	// Rounded so a fractional initialOffset can't produce a fractional offset.
+	const [offset, setOffset] = useState(() => clamp(Math.round(initialOffset), 0, maxOffset));
 
 	// Track previous values via state (React-recommended pattern for storing
 	// information from previous renders without using refs during render)

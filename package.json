@@ -1,6 +1,6 @@
 {
   "name": "ink-scrollable-box",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Scrollable container component for Ink with keyboard navigation, vim bindings, and auto-follow",
   "keywords": [
     "ink",
@@ -27,16 +27,21 @@
   "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
     }
   },
   "files": [
     "dist"
   ],
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "scripts": {
     "build": "tsup",
@@ -50,8 +55,8 @@
     "prepublishOnly": "npm run build"
   },
   "peerDependencies": {
-    "ink": ">=4.0.0",
-    "react": ">=18.0.0"
+    "ink": ">=6.0.0",
+    "react": ">=19.0.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.14",
