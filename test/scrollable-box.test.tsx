@@ -5,7 +5,7 @@ import {
 } from 'vitest';
 import {render} from 'ink-testing-library';
 import {Text} from 'ink';
-import {ScrollableBox} from '../src/scrollable-box.js';
+import {ScrollableBox, computeMeasuredScrollTarget} from '../src/scrollable-box.js';
 import type {ScrollableBoxRef} from '../src/types.js';
 import {
 	tick, write, focus, makeLines, stripAnsi,
@@ -2375,6 +2375,23 @@ describe('ScrollableBox — scrollToIndex with measureChildren', () => {
 		const frame = instance.lastFrame()!;
 		expect(frame).toBeDefined();
 		instance.unmount();
+	});
+
+	it('auto alignment math: no-op when visible, minimal move above/below (measured path)', () => {
+		// itemTop 2, height 1, offset 0, viewport 5 => fully visible, no scroll.
+		expect(computeMeasuredScrollTarget({top: 2, height: 1}, 0, 5, 'auto')).toBeUndefined();
+		// Exactly at the bottom edge (top 4, height 1 fits rows 4..4) — still visible.
+		expect(computeMeasuredScrollTarget({top: 4, height: 1}, 0, 5, 'auto')).toBeUndefined();
+		// Just above the viewport: aligns to its top (minimal upward move).
+		expect(computeMeasuredScrollTarget({top: 2, height: 1}, 3, 5, 'auto')).toBe(2);
+		// Just below the viewport: bottom-aligns (minimal downward move).
+		expect(computeMeasuredScrollTarget({top: 5, height: 1}, 0, 5, 'auto')).toBe(1);
+		// Taller-than-remaining item below: scrolls so its bottom is flush.
+		expect(computeMeasuredScrollTarget({top: 4, height: 3}, 0, 5, 'auto')).toBe(2);
+		// Other aligns for completeness.
+		expect(computeMeasuredScrollTarget({top: 10, height: 1}, 0, 5, 'start')).toBe(10);
+		expect(computeMeasuredScrollTarget({top: 10, height: 1}, 0, 5, 'end')).toBe(6);
+		expect(computeMeasuredScrollTarget({top: 10, height: 1}, 0, 5, 'center')).toBe(8);
 	});
 
 	it('scrollToIndex out of range — returns without error', async () => {

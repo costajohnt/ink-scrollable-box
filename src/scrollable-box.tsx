@@ -83,6 +83,39 @@ function computeScrollToIndex(
 	return index; // 'start'
 }
 
+// Exported for tests: pure alignment math for the measureChildren scrollToIndex
+// path. Returns undefined when the item is already fully visible (no scroll).
+export function computeMeasuredScrollTarget(
+	item: {top: number; height: number},
+	currentOffset: number,
+	effectiveHeight: number,
+	align: 'start' | 'center' | 'end' | 'auto',
+): number | undefined {
+	const itemTop = item.top;
+	const itemHeight = item.height;
+	switch (align) {
+		case 'auto': {
+			if (itemTop >= currentOffset && itemTop + itemHeight <= currentOffset + effectiveHeight) {
+				return undefined; // already visible
+			}
+
+			return itemTop < currentOffset ? itemTop : itemTop + itemHeight - effectiveHeight;
+		}
+
+		case 'center': {
+			return itemTop - Math.floor((effectiveHeight - itemHeight) / 2);
+		}
+
+		case 'end': {
+			return itemTop + itemHeight - effectiveHeight;
+		}
+
+		case 'start': {
+			return itemTop;
+		}
+	}
+}
+
 type RefHandleContext = {
 	scroll: UseScrollableResult;
 	effectiveHeight: number;
@@ -134,34 +167,17 @@ function buildRefHandle(context: RefHandleContext): ScrollableBoxRef {
 				}
 
 				// Use the item's actual top position for alignment
-				const itemTop = pos.top;
-				const itemHeight = pos.height;
-				const align = options?.align ?? 'auto';
-				switch (align) {
-					case 'auto': {
-						if (itemTop >= scroll.offset && itemTop + itemHeight <= scroll.offset + effectiveHeight) {
-							return; // already visible
-						}
-
-						targetOffset = itemTop < scroll.offset ? itemTop : itemTop + itemHeight - effectiveHeight;
-						break;
-					}
-
-					case 'center': {
-						targetOffset = itemTop - Math.floor((effectiveHeight - itemHeight) / 2);
-						break;
-					}
-
-					case 'end': {
-						targetOffset = itemTop + itemHeight - effectiveHeight;
-						break;
-					}
-
-					case 'start': {
-						targetOffset = itemTop;
-						break;
-					}
+				const target = computeMeasuredScrollTarget(
+					pos,
+					scroll.offset,
+					effectiveHeight,
+					options?.align ?? 'auto',
+				);
+				if (target === undefined) {
+					return; // already visible
 				}
+
+				targetOffset = target;
 			} else {
 				targetOffset = computeScrollToIndex(index, effectiveHeight, options?.align ?? 'auto', scroll.offset);
 			}
