@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/costajohnt/ink-scrollable-box/compare/v1.1.1...v1.1.2) (2026-07-25)
+
+
+### Bug Fixes
+
+* cover measured auto-alignment math and harden release workflow ([dd99392](https://github.com/costajohnt/ink-scrollable-box/commit/dd993925fcc6bb4384974f067b4ce7d4ef4d28e6))
+
 ## 1.1.1
 
 Bug fixes and maintenance.
