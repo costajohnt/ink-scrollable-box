@@ -3,6 +3,7 @@ import {
 	useMemo,
 	useCallback,
 	useEffect,
+	useLayoutEffect,
 	useRef,
 } from 'react';
 import type {UseScrollableOptions, UseScrollableResult} from './types.js';
@@ -89,35 +90,59 @@ export function useScrollable({
 		}
 	}
 
+	// Controlled mode: the offset the parent last rendered us with, synced at
+	// commit so event handlers always see the committed value.
+	const committedOffsetRef = useRef(adjustedOffset);
+	useLayoutEffect(() => {
+		committedOffsetRef.current = adjustedOffset;
+	});
+
+	// Controlled mode: the value most recently requested through onOffsetChange
+	// in the current synchronous batch. Several relative scrolls can fire before
+	// the parent re-renders (one stdin chunk carrying several arrow keys, key
+	// repeat, wheel bursts); each must build on the previous request, not on
+	// the stale committed offset, or the steps collapse into one. Cleared once
+	// the batch is over so a parent that rejects a change does not leave a
+	// phantom baseline behind.
+	const pendingOffsetRef = useRef<number | undefined>(undefined);
+
+	const requestOffset = useCallback((next: number) => {
+		const isNewBatch = pendingOffsetRef.current === undefined;
+		pendingOffsetRef.current = next;
+		onOffsetChangeRef.current?.(next);
+		if (isNewBatch) {
+			queueMicrotask(() => {
+				pendingOffsetRef.current = undefined;
+			});
+		}
+	}, []);
+
 	// Helper: update offset, calling onOffsetChange in controlled mode
 	const updateOffset = useCallback(
 		(newOffset: number) => {
 			const clamped = clamp(newOffset, 0, maxOffset);
 			if (isControlled) {
-				onOffsetChangeRef.current?.(clamped);
+				requestOffset(clamped);
 			} else {
 				setOffset(clamped);
 			}
 		},
-		[maxOffset, isControlled],
+		[maxOffset, isControlled, requestOffset],
 	);
 
 	// Helper: update offset with a function of current offset
 	const updateOffsetFn = useCallback(
 		(fn: (current: number) => number) => {
 			if (isControlled) {
-				// In controlled mode we compute from adjustedOffset (the controlled value)
-				// We read from internal state since it's synced to controlledOffset
-				setOffset(current => {
-					const next = clamp(fn(current), 0, maxOffset);
-					onOffsetChangeRef.current?.(next);
-					return current; // Don't actually update internal state in controlled mode
-				});
+				// Compute outside any state updater: onOffsetChange is a side
+				// effect (usually a parent setState) and updaters must be pure.
+				const base = pendingOffsetRef.current ?? committedOffsetRef.current;
+				requestOffset(clamp(fn(base), 0, maxOffset));
 			} else {
 				setOffset(current => clamp(fn(current), 0, maxOffset));
 			}
 		},
-		[maxOffset, isControlled],
+		[maxOffset, isControlled, requestOffset],
 	);
 
 	const scrollUp = useCallback(() => {

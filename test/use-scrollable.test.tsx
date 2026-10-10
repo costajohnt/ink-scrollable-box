@@ -6,7 +6,7 @@ import {render} from 'ink-testing-library';
 import {renderToString, Text} from 'ink';
 import {useScrollable} from '../src/use-scrollable.js';
 import type {UseScrollableOptions} from '../src/types.js';
-import {getState} from './helpers.js';
+import {getState, tick} from './helpers.js';
 
 // Use a ref object to access scroll actions from tests
 const scrollRef: {current: ReturnType<typeof useScrollable> | undefined} = {current: undefined};
@@ -827,6 +827,124 @@ describe('useScrollable', () => {
 				scrollRef.current!.scrollToTop();
 			});
 			expect(onOffsetChange).toHaveBeenCalledWith(0);
+			instance.unmount();
+		});
+
+		it('applies every relative scroll fired before the parent re-renders', async () => {
+			const calls: number[] = [];
+
+			function Parent() {
+				const [offset, setOffset] = React.useState(0);
+				return (
+					<HookTest
+						options={{
+							contentHeight: 20,
+							viewportHeight: 10,
+							controlledOffset: offset,
+							onOffsetChange(next) {
+								calls.push(next);
+								setOffset(next);
+							},
+						}}
+					/>
+				);
+			}
+
+			const instance = render(<Parent />);
+			React.act(() => {
+				scrollRef.current!.scrollDown();
+				scrollRef.current!.scrollDown();
+				scrollRef.current!.scrollDown();
+			});
+			await tick();
+			expect(getState(instance).offset).toBe(3);
+
+			React.act(() => {
+				scrollRef.current!.scrollDown();
+			});
+			await tick();
+			expect(calls).toEqual([1, 2, 3, 4]);
+			expect(getState(instance).offset).toBe(4);
+			instance.unmount();
+		});
+
+		it('batches mixed relative and absolute scrolls in controlled mode', async () => {
+			const calls: number[] = [];
+
+			function Parent() {
+				const [offset, setOffset] = React.useState(0);
+				return (
+					<HookTest
+						options={{
+							contentHeight: 30,
+							viewportHeight: 10,
+							controlledOffset: offset,
+							onOffsetChange(next) {
+								calls.push(next);
+								setOffset(next);
+							},
+						}}
+					/>
+				);
+			}
+
+			const instance = render(<Parent />);
+			React.act(() => {
+				scrollRef.current!.scrollTo(5);
+				scrollRef.current!.pageDown();
+				scrollRef.current!.scrollUp();
+			});
+			await tick();
+			expect(calls).toEqual([5, 15, 14]);
+			expect(getState(instance).offset).toBe(14);
+			instance.unmount();
+		});
+
+		it('calls onOffsetChange once per scroll under StrictMode', async () => {
+			const onOffsetChange = vi.fn();
+			const instance = render(
+				<React.StrictMode>
+					<HookTest
+						options={{
+							contentHeight: 20,
+							viewportHeight: 10,
+							controlledOffset: 0,
+							onOffsetChange,
+						}}
+					/>
+				</React.StrictMode>,
+			);
+			React.act(() => {
+				scrollRef.current!.scrollDown();
+			});
+			await tick();
+			expect(onOffsetChange).toHaveBeenCalledTimes(1);
+			expect(onOffsetChange).toHaveBeenCalledWith(1);
+			instance.unmount();
+		});
+
+		it('starts from the controlled value again after the parent rejects a change', async () => {
+			const onOffsetChange = vi.fn();
+			const instance = render(
+				<HookTest
+					options={{
+						contentHeight: 20,
+						viewportHeight: 10,
+						controlledOffset: 2,
+						onOffsetChange,
+					}}
+				/>,
+			);
+			React.act(() => {
+				scrollRef.current!.scrollDown();
+			});
+			await tick();
+			React.act(() => {
+				scrollRef.current!.scrollDown();
+			});
+			await tick();
+			// The parent never accepted 3, so the second step is from 2 again.
+			expect(onOffsetChange.mock.calls).toEqual([[3], [3]]);
 			instance.unmount();
 		});
 	});
