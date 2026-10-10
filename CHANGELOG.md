@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.4](https://github.com/costajohnt/ink-scrollable-box/compare/v1.1.3...v1.1.4) (2026-10-10)
+
+
+### Bug Fixes
+
+* **deps:** patch dev dependency advisories ([#22](https://github.com/costajohnt/ink-scrollable-box/issues/22)) ([41542ee](https://github.com/costajohnt/ink-scrollable-box/commit/41542ee2c1ed92383133feb799ec56651aa9d64f))
+
 ## [1.1.3](https://github.com/costajohnt/ink-scrollable-box/compare/v1.1.2...v1.1.3) (2026-10-10)
 
 
