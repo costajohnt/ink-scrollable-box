@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.3](https://github.com/costajohnt/ink-scrollable-box/compare/v1.1.2...v1.1.3) (2026-10-10)
+
+
+### Bug Fixes
+
+* keep batched scroll steps in controlled mode ([#20](https://github.com/costajohnt/ink-scrollable-box/issues/20)) ([a377d1b](https://github.com/costajohnt/ink-scrollable-box/commit/a377d1b3dbbba7ea8938d4cac2d2c252e76a174a)), closes [#19](https://github.com/costajohnt/ink-scrollable-box/issues/19)
+
 ## [1.1.2](https://github.com/costajohnt/ink-scrollable-box/compare/v1.1.1...v1.1.2) (2026-07-25)
 
 
