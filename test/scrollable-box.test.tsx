@@ -1,4 +1,4 @@
-/* eslint-disable max-lines */
+/* eslint-disable max-lines -- one suite for the component keeps shared fixtures in one place */
 import React, {useRef, useEffect, useState} from 'react';
 import {
 	describe,
@@ -98,7 +98,7 @@ describe('ScrollableBox — lines mode', () => {
 		// Strip ANSI so the width check counts visible columns, not color bytes
 		// (raw SGR codes inflate line length under FORCE_COLOR).
 		const frame = stripAnsi(lastFrame()!);
-		for (const line of frame.split('\n').filter(l => l.length > 0)) {
+		for (const line of frame.split('\n')) {
 			expect(line.length).toBeLessThanOrEqual(30);
 		}
 
@@ -368,7 +368,9 @@ describe('ScrollableBox — onScroll callback', () => {
 				<ScrollableBox
 					height={5}
 					lines={lines}
-					onScroll={state => scrollStates.push({offset: state.offset})}
+					onScroll={state => {
+						scrollStates.push({offset: state.offset});
+					}}
 				/>,
 			);
 		});

@@ -30,7 +30,7 @@ function validateProps({height, lines, children, overscan, reachThreshold, initi
 		throw new Error('ScrollableBox: Provide either `lines` or `children`, not both.');
 	}
 
-	if (!Number.isInteger(height) || height <= 0) {
+	if (!Number.isSafeInteger(height) || height <= 0) {
 		throw new Error(`ScrollableBox: \`height\` must be a positive integer, got ${height}.`);
 	}
 
@@ -38,7 +38,7 @@ function validateProps({height, lines, children, overscan, reachThreshold, initi
 		throw new Error('ScrollableBox: `lines` must be an array of strings.');
 	}
 
-	if (overscan !== undefined && (overscan < 0 || !Number.isInteger(overscan))) {
+	if (overscan !== undefined && (overscan < 0 || !Number.isSafeInteger(overscan))) {
 		throw new Error(`ScrollableBox: \`overscan\` must be a non-negative integer, got ${overscan}.`);
 	}
 
@@ -63,24 +63,15 @@ function computeScrollToIndex(
 			return currentOffset;
 		}
 
-		// Above viewport — align to top
-		if (index < currentOffset) {
-			return index;
-		}
-
-		// Below viewport — align to bottom
-		return index - effectiveHeight + 1;
+		// Above viewport — align to top; below viewport — align to bottom
+		return index < currentOffset ? index : index - effectiveHeight + 1;
 	}
 
 	if (align === 'end') {
 		return index - effectiveHeight + 1;
 	}
 
-	if (align === 'center') {
-		return index - Math.floor(effectiveHeight / 2);
-	}
-
-	return index; // 'start'
+	return align === 'center' ? index - Math.floor(effectiveHeight / 2) : index; // else 'start'
 }
 
 // Exported for tests: pure alignment math for the measureChildren scrollToIndex
@@ -265,23 +256,10 @@ function resolveProps(props: ScrollableBoxProps) {
 	};
 }
 
-function useContentHeight(
-	lines: string[] | undefined,
-	measureChildren: boolean,
-	measuredHeight: number,
-	childrenLength: number,
-): number {
-	if (lines) {
-		return lines.length;
-	}
-
-	return measureChildren ? measuredHeight : childrenLength;
-}
-
 // True only when every child index 0..count-1 has a numeric measured height.
 // Index-based (not `heights.every`) so a hole left by remeasureItem counts as
 // unmeasured rather than being skipped.
-function allChildrenMeasured(heights: number[], count: number): boolean {
+function areAllChildrenMeasured(heights: number[], count: number): boolean {
 	if (heights.length !== count) {
 		return false;
 	}
@@ -390,10 +368,10 @@ function ScrollableBoxRender(
 		height, lines, children, overscan, reachThreshold, initialOffset,
 	});
 
-	const childrenArray = useMemo(
-		() => (children ? Children.toArray(children) : []),
-		[children],
-	);
+	// Falsy children (including '' and 0) mean no rows; items are measured by
+	// index, which needs the flattened array.
+	// eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @eslint-react/no-children-to-array -- see above
+	const childrenArray = useMemo(() => (children ? Children.toArray(children) : []), [children]);
 
 	// Measurement state for variable-height children
 	const heightsRef = useRef<number[]>([]);
@@ -414,7 +392,7 @@ function ScrollableBoxRender(
 		// per-index (not `total > 0`) lets a genuine collapse to 0 update
 		// contentHeight instead of leaving it stale (which would show phantom
 		// overflow), while still ignoring the not-yet-measured initial state.
-		if (!(measureChildren && allChildrenMeasured(heightsRef.current, childrenArray.length))) {
+		if (!(measureChildren && areAllChildrenMeasured(heightsRef.current, childrenArray.length))) {
 			return;
 		}
 
@@ -443,7 +421,8 @@ function ScrollableBoxRender(
 		}
 	}, []);
 
-	const contentHeight = useContentHeight(lines, measureChildren, measuredHeight, childrenArray.length);
+	const childrenHeight = measureChildren ? measuredHeight : childrenArray.length;
+	const contentHeight = lines ? lines.length : childrenHeight;
 	const effectiveHeight = border ? Math.max(1, height - 2) : height;
 
 	const scroll = useScrollable({
@@ -588,5 +567,6 @@ function ScrollableBoxRender(
 	);
 }
 
+// eslint-disable-next-line @eslint-react/no-forward-ref -- dropping forwardRef changes the exported component type; save for a major
 export const ScrollableBox = forwardRef<ScrollableBoxRef, ScrollableBoxProps>(ScrollableBoxRender);
 ScrollableBox.displayName = 'ScrollableBox';

@@ -52,10 +52,10 @@ export function useScrollCallbacks({
 		onScrollRef.current = onScroll;
 	}, [onScroll]);
 
-	const isFirstScrollRender = useRef(true);
+	const isFirstScrollRenderRef = useRef(true);
 	useEffect(() => {
-		if (isFirstScrollRender.current) {
-			isFirstScrollRender.current = false;
+		if (isFirstScrollRenderRef.current) {
+			isFirstScrollRenderRef.current = false;
 			return;
 		}
 

@@ -70,20 +70,20 @@ Press Tab to ensure focus, then test each key:
 
 | Key | Expected | Verify |
 |-----|----------|--------|
-| `j` | Scroll down 1 line | [ ] "Item 2" at top |
-| `k` | Scroll up 1 line | [ ] "Item 1" at top again |
-| `↓` (arrow) | Scroll down 1 line | [ ] Same as `j` |
-| `↑` (arrow) | Scroll up 1 line | [ ] Same as `k` |
-| `G` (shift+g) | Jump to bottom | [ ] "Item 100" visible, ▲ at top |
-| `g` | Jump to top | [ ] "Item 1" at top, ▼ at bottom |
-| `d` | Page down (full viewport) | [ ] Jumps ~15 items |
-| `u` | Page up (full viewport) | [ ] Jumps ~15 items back |
-| `Ctrl+D` | Half-page down | [ ] Jumps ~7 items |
-| `Ctrl+U` | Half-page up | [ ] Jumps ~7 items back |
-| `End` | Jump to bottom | [ ] Same as `G` |
-| `Home` | Jump to top | [ ] Same as `g` |
-| `Page Down` | Full page down | [ ] Same as `d` |
-| `Page Up` | Full page up | [ ] Same as `u` |
+| `j` | Scroll down 1 line | \[ ] "Item 2" at top |
+| `k` | Scroll up 1 line | \[ ] "Item 1" at top again |
+| `↓` (arrow) | Scroll down 1 line | \[ ] Same as `j` |
+| `↑` (arrow) | Scroll up 1 line | \[ ] Same as `k` |
+| `G` (shift+g) | Jump to bottom | \[ ] "Item 100" visible, ▲ at top |
+| `g` | Jump to top | \[ ] "Item 1" at top, ▼ at bottom |
+| `d` | Page down (full viewport) | \[ ] Jumps ~15 items |
+| `u` | Page up (full viewport) | \[ ] Jumps ~15 items back |
+| `Ctrl+D` | Half-page down | \[ ] Jumps ~7 items |
+| `Ctrl+U` | Half-page up | \[ ] Jumps ~7 items back |
+| `End` | Jump to bottom | \[ ] Same as `G` |
+| `Home` | Jump to top | \[ ] Same as `g` |
+| `Page Down` | Full page down | \[ ] Same as `d` |
+| `Page Up` | Full page up | \[ ] Same as `u` |
 
 ### 2.2 Scrollbar tracks position
 While in `examples/basic.tsx`:
@@ -176,8 +176,8 @@ npx tsx examples/large-dataset.tsx
 ```
 **Verify:**
 - [ ] Renders instantly (< 1 second to first frame)
-- [ ] `G` (jump to bottom) is instant — shows line [099999]
-- [ ] `g` (jump to top) is instant — shows line [000000]
+- [ ] `G` (jump to bottom) is instant — shows line `099999`
+- [ ] `g` (jump to top) is instant — shows line `000000`
 - [ ] Scrolling with `j`/`k` is smooth, no perceptible lag
 - [ ] Hold down `j` — rapid scrolling is smooth, no jank
 
@@ -388,17 +388,17 @@ npx tsx test.tsx
 
 | Section | Tests | Status |
 |---------|-------|--------|
-| 1. Smoke test | 3 | [ ] |
-| 2. Keyboard | 3 | [ ] |
-| 3. Children mode | 1 | [ ] |
-| 4. followOutput | 2 | [ ] |
-| 5. Multi-pane | 2 | [ ] |
-| 6. Theming | 1 | [ ] |
-| 7. Performance | 2 | [ ] |
-| 8. Border | 1 | [ ] |
-| 9. Edge cases | 3 | [ ] |
-| 10. Controlled mode | 1 | [ ] |
-| 11. Ref API | 1 | [ ] |
-| 12. Vim toggle | 1 | [ ] |
-| 13. Package install | 1 | [ ] |
+| 1. Smoke test | 3 | \[ ] |
+| 2. Keyboard | 3 | \[ ] |
+| 3. Children mode | 1 | \[ ] |
+| 4. followOutput | 2 | \[ ] |
+| 5. Multi-pane | 2 | \[ ] |
+| 6. Theming | 1 | \[ ] |
+| 7. Performance | 2 | \[ ] |
+| 8. Border | 1 | \[ ] |
+| 9. Edge cases | 3 | \[ ] |
+| 10. Controlled mode | 1 | \[ ] |
+| 11. Ref API | 1 | \[ ] |
+| 12. Vim toggle | 1 | \[ ] |
+| 13. Package install | 1 | \[ ] |
 | **Total** | **22 test scenarios** | |
