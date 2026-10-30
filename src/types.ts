@@ -213,6 +213,10 @@ export type ScrollableBoxProps = {
    */
 	children?: React.ReactNode;
 	/**
+  Ref receiving the imperative scroll handle (`scrollTo`, `scrollToIndex`, ...).
+  */
+	ref?: React.Ref<ScrollableBoxRef>;
+	/**
   Auto-scroll to bottom when content grows (default: false)
   */
 	followOutput?: boolean;

@@ -1,6 +1,5 @@
 import {
 	Children,
-	forwardRef,
 	useCallback,
 	useEffect,
 	useImperativeHandle,
@@ -318,11 +317,9 @@ function ScreenReaderAnnouncement({
 	);
 }
 
-function ScrollableBoxRender(
-	props: ScrollableBoxProps,
-	ref: React.ForwardedRef<ScrollableBoxRef>,
-) {
+export function ScrollableBox(props: ScrollableBoxProps) {
 	const {
+		ref,
 		height,
 		width,
 		lines,
@@ -567,6 +564,3 @@ function ScrollableBoxRender(
 	);
 }
 
-// eslint-disable-next-line @eslint-react/no-forward-ref -- dropping forwardRef changes the exported component type; save for a major
-export const ScrollableBox = forwardRef<ScrollableBoxRef, ScrollableBoxProps>(ScrollableBoxRender);
-ScrollableBox.displayName = 'ScrollableBox';
