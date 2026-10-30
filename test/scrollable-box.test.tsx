@@ -208,7 +208,6 @@ describe('ScrollableBox — children mode', () => {
 describe('ScrollableBox — prop validation', () => {
 	// ScrollableBox is wrapped with forwardRef, so we access the inner render
 	// function to call it directly and observe validation throws.
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 	const renderFn = (ScrollableBox as unknown as {render: (...args: unknown[]) => unknown}).render;
 
 	it('throws when both lines and children are provided', () => {
@@ -2161,7 +2160,6 @@ describe('ScrollableBox — scrollbarPosition', () => {
 });
 
 describe('ScrollableBox — prop validation: overscan and reachThreshold', () => {
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
 	const renderFn = (ScrollableBox as unknown as {render: (...args: unknown[]) => unknown}).render;
 
 	it('throws for negative overscan', () => {

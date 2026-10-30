@@ -89,7 +89,7 @@ describe('Scrollbar', () => {
 		const hasFullBlock = frame.includes('█');
 		const hasUpperHalf = frame.includes('▀');
 		const hasLowerHalf = frame.includes('▄');
-		expect(hasFullBlock || hasUpperHalf || hasLowerHalf).toBe(true); // eslint-disable-line @typescript-eslint/prefer-nullish-coalescing
+		expect(hasFullBlock || hasUpperHalf || hasLowerHalf).toBe(true);
 		unmount();
 	});
 
@@ -238,7 +238,7 @@ describe('Scrollbar', () => {
 		const frame = lastFrame()!;
 		const hasUpperHalf = frame.includes('▀');
 		const hasLowerHalf = frame.includes('▄');
-		expect(hasUpperHalf || hasLowerHalf).toBe(true); // eslint-disable-line @typescript-eslint/prefer-nullish-coalescing
+		expect(hasUpperHalf || hasLowerHalf).toBe(true);
 		unmount();
 	});
 

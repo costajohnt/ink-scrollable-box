@@ -1,51 +1,53 @@
+import base from '@costajohnt/ink-config/xo';
+
 /** @type {import('xo').FlatXoConfig} */
 const xoConfig = [
+	...base,
 	{
-		ignores: ['examples/**', 'tsup.config.ts', 'vitest.config.ts'],
-	},
-	{
-		react: true,
+		// Rules this codebase does not satisfy yet under the shared config.
+		// Burn these down by fixing the code and deleting the line.
 		rules: {
-			'@typescript-eslint/no-explicit-any': 'error',
-			'react/react-in-jsx-scope': 'off',
-			'react/prop-types': 'off',
-			'@typescript-eslint/consistent-type-definitions': ['error', 'type'],
-			// Disabled: XO's stylistic rules conflict with Ink JSX patterns
-			'@stylistic/indent': 'off',
-			'@stylistic/jsx-quotes': 'off',
-			'@stylistic/operator-linebreak': 'off',
-			'@stylistic/function-paren-newline': 'off',
-			'@stylistic/no-trailing-spaces': 'off',
-			'@stylistic/eol-last': 'off',
-			'@stylistic/key-spacing': 'off',
-			'@stylistic/jsx-tag-spacing': 'off',
-			'react/jsx-closing-tag-location': 'off',
-			'react/jsx-sort-props': 'off',
-			'react/no-array-index-key': 'off',
-			'capitalized-comments': 'off',
-			'require-unicode-regexp': 'off',
-			'unicorn/prefer-at': 'off',
-			'@typescript-eslint/no-unnecessary-type-assertion': 'off',
-			'@typescript-eslint/strict-void-return': 'off',
-			'react/jsx-indent': 'off',
-			'react/jsx-indent-props': 'off',
-			'react/jsx-tag-spacing': 'off',
-			'react/prefer-read-only-props': 'off',
-			'react/boolean-prop-naming': 'off',
-			'unicorn/no-hex-escape': 'off',
-			'new-cap': 'off',
-			'no-promise-executor-return': 'off',
+			'@eslint-react/naming-convention-ref-name': 'off',
+			'@eslint-react/no-children-to-array': 'off',
+			'@eslint-react/no-forward-ref': 'off',
+			'@eslint-react/no-unnecessary-use-prefix': 'off',
+			'@typescript-eslint/strict-boolean-expressions': 'off',
+			'jsdoc/require-asterisk-prefix': 'off',
+			'unicorn/consistent-boolean-name': 'off',
+			'unicorn/prefer-early-return': 'off',
+			'unicorn/prefer-export-from': 'off',
+			'unicorn/prefer-number-is-safe-integer': 'off',
+			'unicorn/prefer-simple-condition-first': 'off',
+			'unicorn/prefer-ternary': 'off',
+			'unicorn/single-line-block-comment-style': 'off',
 		},
 	},
 	{
-		files: ['test/**'],
+		files: ['test/**', 'src/**/__tests__/**'],
 		rules: {
-			'@typescript-eslint/no-floating-promises': 'off',
-			'@typescript-eslint/no-unsafe-assignment': 'off',
-			'@typescript-eslint/no-unsafe-call': 'off',
-			'@typescript-eslint/no-unsafe-member-access': 'off',
-			'@typescript-eslint/no-unsafe-return': 'off',
-			'@typescript-eslint/no-unsafe-argument': 'off',
+			'@eslint-community/eslint-comments/require-description': 'off',
+			'node-test/no-import-test-files': 'off',
+			'regexp/no-control-character': 'off',
+			'unicorn/no-duplicate-loops': 'off',
+			'unicorn/no-return-array-push': 'off',
+			'unicorn/prefer-global-number-constants': 'off',
+			'unicorn/prefer-unicode-code-point-escapes': 'off',
+			'xo/import-specifier-newline': 'off',
+		},
+	},
+	{
+		files: ['**/*.md'],
+		rules: {
+			'markdown/no-missing-label-refs': 'off',
+		},
+	},
+	{
+		files: ['package.json'],
+		rules: {
+			'package-json/prefer-shorthand': 'off',
+			'package-json/prefer-side-effects-field': 'off',
+			'package-json/require-default-condition': 'off',
+			'package-json/sort-properties': 'off',
 		},
 	},
 ];

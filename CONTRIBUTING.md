@@ -14,9 +14,8 @@ npm install
 
 - `npm run build` — Build ESM + CJS output
 - `npm run dev` — Watch mode build
-- `npm test` — Run tests
+- `npm test` — Run tests with coverage (enforces thresholds)
 - `npm run test:watch` — Watch mode tests
-- `npm run test:coverage` — Run with coverage
 - `npm run lint` — Lint with xo
 - `npm run lint:fix` — Auto-fix lint issues
 - `npm run typecheck` — TypeScript type checking
