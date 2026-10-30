@@ -1,5 +1,16 @@
 # Changelog
 
+## [2.0.0](https://github.com/costajohnt/ink-scrollable-box/compare/v1.1.4...v2.0.0) (2026-10-30)
+
+
+### ⚠ BREAKING CHANGES
+
+* requires Node.js 22 or later. ScrollableBox is no longer a forwardRef component; ref is a regular prop (React 19).
+
+### Features
+
+* require Node.js 22 and take ref as a prop ([#28](https://github.com/costajohnt/ink-scrollable-box/issues/28)) ([8299379](https://github.com/costajohnt/ink-scrollable-box/commit/82993794243946922d0aa9dec505bb7c23819a87))
+
 ## [1.1.4](https://github.com/costajohnt/ink-scrollable-box/compare/v1.1.3...v1.1.4) (2026-10-10)
 
 
