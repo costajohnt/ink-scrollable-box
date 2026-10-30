@@ -215,9 +215,9 @@ describe('ScrollableBox — children mode', () => {
 });
 
 describe('ScrollableBox — prop validation', () => {
-	// ScrollableBox is wrapped with forwardRef, so we access the inner render
-	// function to call it directly and observe validation throws.
-	const renderFn = (ScrollableBox as unknown as {render: (...args: unknown[]) => unknown}).render;
+	// Call the component function directly: validation throws before any hook
+	// runs, so no renderer is needed to observe it.
+	const renderFn = ScrollableBox as unknown as (...args: unknown[]) => unknown;
 
 	it('throws when both lines and children are provided', () => {
 		expect(() => {
@@ -2171,7 +2171,7 @@ describe('ScrollableBox — scrollbarPosition', () => {
 });
 
 describe('ScrollableBox — prop validation: overscan and reachThreshold', () => {
-	const renderFn = (ScrollableBox as unknown as {render: (...args: unknown[]) => unknown}).render;
+	const renderFn = ScrollableBox as unknown as (...args: unknown[]) => unknown;
 
 	it('throws for negative overscan', () => {
 		expect(() => {
