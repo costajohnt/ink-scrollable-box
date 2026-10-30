@@ -1,13 +1,15 @@
 import React from 'react';
 import {
-	describe, it, expect,
+	describe,
+	it,
+	expect,
 } from 'vitest';
 import {render} from 'ink-testing-library';
 import {ScrollableBox} from '../src/scrollable-box.js';
 import {useLinkedScroll} from '../src/use-linked-scroll.js';
 import {tick, makeLines} from './helpers.js';
 
-const arrowDown = '\u001B[B';
+const arrowDown = '\u{1B}[B';
 
 describe('useLinkedScroll', () => {
 	it('two ScrollableBoxes with linked scroll — scrolling one updates the other', async () => {

@@ -1,224 +1,374 @@
 export type ScrollState = {
-  /** Current scroll offset (0-based line index at top of viewport) */
-  offset: number;
-  /** Total content height in lines */
-  contentHeight: number;
-  /** Visible viewport height in lines */
-  viewportHeight: number;
-  /** Whether content exists above the viewport */
-  canScrollUp: boolean;
-  /** Whether content exists below the viewport */
-  canScrollDown: boolean;
-  /** Whether viewport is at the very top */
-  isAtTop: boolean;
-  /** Whether viewport is at the very bottom */
-  isAtBottom: boolean;
-  /** Scroll position as 0-100 percentage */
-  percentage: number;
+	/**
+  Current scroll offset (0-based line index at top of viewport)
+  */
+	offset: number;
+	/**
+  Total content height in lines
+  */
+	contentHeight: number;
+	/**
+  Visible viewport height in lines
+  */
+	viewportHeight: number;
+	/**
+  Whether content exists above the viewport
+  */
+	canScrollUp: boolean;
+	/**
+  Whether content exists below the viewport
+  */
+	canScrollDown: boolean;
+	/**
+  Whether viewport is at the very top
+  */
+	isAtTop: boolean;
+	/**
+  Whether viewport is at the very bottom
+  */
+	isAtBottom: boolean;
+	/**
+  Scroll position as 0-100 percentage
+  */
+	percentage: number;
 };
 
 export type ScrollActions = {
-  /** Scroll up by scrollStep lines */
-  scrollUp: () => void;
-  /** Scroll down by scrollStep lines */
-  scrollDown: () => void;
-  /** Jump to a specific offset (clamped to valid range) */
-  scrollTo: (offset: number) => void;
-  /** Jump to the top */
-  scrollToTop: () => void;
-  /** Jump to the bottom */
-  scrollToBottom: () => void;
-  /** Scroll up by one viewport height */
-  pageUp: () => void;
-  /** Scroll down by one viewport height */
-  pageDown: () => void;
-  /** Scroll up by half a viewport height */
-  halfPageUp: () => void;
-  /** Scroll down by half a viewport height */
-  halfPageDown: () => void;
+	/**
+  Scroll up by scrollStep lines
+  */
+	scrollUp: () => void;
+	/**
+  Scroll down by scrollStep lines
+  */
+	scrollDown: () => void;
+	/**
+  Jump to a specific offset (clamped to valid range)
+  */
+	scrollTo: (offset: number) => void;
+	/**
+  Jump to the top
+  */
+	scrollToTop: () => void;
+	/**
+  Jump to the bottom
+  */
+	scrollToBottom: () => void;
+	/**
+  Scroll up by one viewport height
+  */
+	pageUp: () => void;
+	/**
+  Scroll down by one viewport height
+  */
+	pageDown: () => void;
+	/**
+  Scroll up by half a viewport height
+  */
+	halfPageUp: () => void;
+	/**
+  Scroll down by half a viewport height
+  */
+	halfPageDown: () => void;
 };
 
 export type UseScrollableOptions = {
-  /** Total content height in lines */
-  contentHeight: number;
-  /** Visible viewport height in lines */
-  viewportHeight: number;
-  /** Lines per scroll step (default: 1) */
-  scrollStep?: number;
-  /** Auto-scroll to bottom when contentHeight grows (default: false) */
-  followOutput?: boolean;
-  /**
-   * Starting scroll position (default: 0). Applied once when the hook mounts,
-   * against the `contentHeight` known at that moment, and rounded/clamped to a
-   * valid integer offset. It does not re-apply when `contentHeight` grows later
-   * (async data, measured children), so it cannot pin to a not-yet-known
-   * bottom. For tailing growing content, use `followOutput` instead.
+	/**
+  Total content height in lines
+  */
+	contentHeight: number;
+	/**
+  Visible viewport height in lines
+  */
+	viewportHeight: number;
+	/**
+  Lines per scroll step (default: 1)
+  */
+	scrollStep?: number;
+	/**
+  Auto-scroll to bottom when contentHeight grows (default: false)
+  */
+	followOutput?: boolean;
+	/**
+   Starting scroll position (default: 0). Applied once when the hook mounts,
+   against the `contentHeight` known at that moment, and rounded/clamped to a
+   valid integer offset. It does not re-apply when `contentHeight` grows later
+   (async data, measured children), so it cannot pin to a not-yet-known
+   bottom. For tailing growing content, use `followOutput` instead.
    */
-  initialOffset?: number;
-  /** External controlled offset. When provided, overrides internal state. */
-  controlledOffset?: number;
-  /** Called when the internal offset would change (for controlled mode) */
-  onOffsetChange?: (offset: number) => void;
+	initialOffset?: number;
+	/**
+  External controlled offset. When provided, overrides internal state.
+  */
+	controlledOffset?: number;
+	/**
+  Called when the internal offset would change (for controlled mode)
+  */
+	onOffsetChange?: (offset: number) => void;
 };
 
 export type UseScrollableResult = ScrollState & ScrollActions;
 
 export type ScrollbarProps = {
-  contentHeight: number;
-  viewportHeight: number;
-  offset: number;
-  isFocused: boolean;
-  /** Scrollbar visual style. Default: 'block'. */
-  scrollbarStyle?: 'block' | 'line' | 'thick' | 'dots';
-  thumbCharacter?: string;
-  trackCharacter?: string;
-  thumbColor?: string;
-  thumbDimColor?: string;
-  trackColor?: string;
+	contentHeight: number;
+	viewportHeight: number;
+	offset: number;
+	isFocused: boolean;
+	/**
+  Scrollbar visual style. Default: 'block'.
+  */
+	scrollbarStyle?: 'block' | 'line' | 'thick' | 'dots';
+	thumbCharacter?: string;
+	trackCharacter?: string;
+	thumbColor?: string;
+	thumbDimColor?: string;
+	trackColor?: string;
 };
 
 export type ScrollableBoxRef = {
-  /** Scroll to a specific offset (clamped to valid range) */
-  scrollTo: (offset: number) => void;
-  /** Scroll by a relative delta (positive = down, negative = up, clamped) */
-  scrollBy: (delta: number) => void;
-  /** Jump to the top */
-  scrollToTop: () => void;
-  /** Jump to the bottom */
-  scrollToBottom: () => void;
-  /** Scroll up by scrollStep lines */
-  scrollUp: () => void;
-  /** Scroll down by scrollStep lines */
-  scrollDown: () => void;
-  /** Scroll up by one viewport height */
-  pageUp: () => void;
-  /** Scroll down by one viewport height */
-  pageDown: () => void;
-  /** Scroll up by half a viewport height */
-  halfPageUp: () => void;
-  /** Scroll down by half a viewport height */
-  halfPageDown: () => void;
-  /** Scroll to a specific item index with alignment */
-  scrollToIndex: (index: number, options?: {align?: 'start' | 'center' | 'end' | 'auto'}) => void;
-  /** Get current scroll state */
-  getScrollState: () => ScrollState;
-  /** Get the maximum scroll offset (contentHeight - viewportHeight) */
-  getBottomOffset: () => number;
-  /** Get the height of a specific child (in terminal lines). Returns 0 if index is out of range. In non-measure mode, returns 1. */
-  getItemHeight: (index: number) => number;
-  /** Get the position and height of a specific child. Returns undefined if index is out of range. */
-  getItemPosition: (index: number) => {top: number; height: number} | undefined;
-  /** Force re-measurement of a specific child. Only works in measureChildren mode. */
-  remeasureItem: (index: number) => void;
+	/**
+  Scroll to a specific offset (clamped to valid range)
+  */
+	scrollTo: (offset: number) => void;
+	/**
+  Scroll by a relative delta (positive = down, negative = up, clamped)
+  */
+	scrollBy: (delta: number) => void;
+	/**
+  Jump to the top
+  */
+	scrollToTop: () => void;
+	/**
+  Jump to the bottom
+  */
+	scrollToBottom: () => void;
+	/**
+  Scroll up by scrollStep lines
+  */
+	scrollUp: () => void;
+	/**
+  Scroll down by scrollStep lines
+  */
+	scrollDown: () => void;
+	/**
+  Scroll up by one viewport height
+  */
+	pageUp: () => void;
+	/**
+  Scroll down by one viewport height
+  */
+	pageDown: () => void;
+	/**
+  Scroll up by half a viewport height
+  */
+	halfPageUp: () => void;
+	/**
+  Scroll down by half a viewport height
+  */
+	halfPageDown: () => void;
+	/**
+  Scroll to a specific item index with alignment
+  */
+	scrollToIndex: (index: number, options?: {align?: 'start' | 'center' | 'end' | 'auto'}) => void;
+	/**
+  Get current scroll state
+  */
+	getScrollState: () => ScrollState;
+	/**
+  Get the maximum scroll offset (contentHeight - viewportHeight)
+  */
+	getBottomOffset: () => number;
+	/**
+  Get the height of a specific child (in terminal lines). Returns 0 if index is out of range. In non-measure mode, returns 1.
+  */
+	getItemHeight: (index: number) => number;
+	/**
+  Get the position and height of a specific child. Returns undefined if index is out of range.
+  */
+	getItemPosition: (index: number) => {top: number; height: number} | undefined;
+	/**
+  Force re-measurement of a specific child. Only works in measureChildren mode.
+  */
+	remeasureItem: (index: number) => void;
 };
 
 export type ScrollableBoxProps = {
-  /** Viewport height in terminal lines (required) */
-  height: number;
-  /** Viewport width in terminal columns. When set, the container has a fixed width. */
-  width?: number;
-  /** String content — performance mode (mutually exclusive with children) */
-  lines?: string[];
-  /**
-   * React children — ergonomic mode (mutually exclusive with lines).
-   * Each child is assumed to render as exactly 1 terminal line.
-   * Multi-line children (e.g., wrapped text) will cause scroll math
-   * to be incorrect. Use `lines` mode for predictable behavior.
+	/**
+  Viewport height in terminal lines (required)
+  */
+	height: number;
+	/**
+  Viewport width in terminal columns. When set, the container has a fixed width.
+  */
+	width?: number;
+	/**
+  String content — performance mode (mutually exclusive with children)
+  */
+	lines?: string[];
+	/**
+   React children — ergonomic mode (mutually exclusive with lines).
+   Each child is assumed to render as exactly 1 terminal line.
+   Multi-line children (e.g., wrapped text) will cause scroll math
+   to be incorrect. Use `lines` mode for predictable behavior.
    */
-  children?: React.ReactNode;
-  /** Auto-scroll to bottom when content grows (default: false) */
-  followOutput?: boolean;
-  /**
-   * Starting scroll offset for uncontrolled mode (default: 0). Ignored when
-   * `offset` (controlled mode) is provided. Applied once against the content
-   * height known at mount and rounded/clamped to a valid integer, so it does
-   * not track content that loads or is measured after mount (async data,
-   * `measureChildren`). To keep a growing log pinned to the bottom, use
-   * `followOutput` instead.
+	children?: React.ReactNode;
+	/**
+  Auto-scroll to bottom when content grows (default: false)
+  */
+	followOutput?: boolean;
+	/**
+   Starting scroll offset for uncontrolled mode (default: 0). Ignored when
+   `offset` (controlled mode) is provided. Applied once against the content
+   height known at mount and rounded/clamped to a valid integer, so it does
+   not track content that loads or is measured after mount (async data,
+   `measureChildren`). To keep a growing log pinned to the bottom, use
+   `followOutput` instead.
    */
-  initialOffset?: number;
-  /** Lines per arrow key press (default: 1) */
-  scrollStep?: number;
-  /** Draw rounded border around viewport (default: false) */
-  border?: boolean;
-  /** Show proportional scrollbar (default: true) */
-  showScrollbar?: boolean;
-  /** Show overflow indicators (default: true) */
-  showIndicators?: boolean;
-  /** Participate in Tab focus cycle (default: true) */
-  focusable?: boolean;
-  /** Auto-focus this component on mount (default: false) */
-  autoFocus?: boolean;
-  /** Focus ID for programmatic focus */
-  id?: string;
-  /** Scroll event callback */
-  onScroll?: (state: ScrollState) => void;
-  /** Scrollbar visual style. Default: 'block'. */
-  scrollbarStyle?: 'block' | 'line' | 'thick' | 'dots';
-  /** Scrollbar thumb character (default: █) */
-  scrollbarCharacter?: string;
-  /** Scrollbar track character (default: ░) */
-  trackCharacter?: string;
-  /** Up overflow indicator (default: ▲) */
-  upIndicator?: string;
-  /** Down overflow indicator (default: ▼) */
-  downIndicator?: string;
-  /** Scrollbar thumb color when focused */
-  scrollbarColor?: string;
-  /** Scrollbar thumb color when unfocused */
-  scrollbarDimColor?: string;
-  /** Track color */
-  trackColor?: string;
-  /** Border color when focused */
-  borderColor?: string;
-  /** Border color when unfocused (default: gray) */
-  borderDimColor?: string;
-  /** Enable vim-style keybindings (j/k/g/G/u/d). Default: true */
-  enableVimBindings?: boolean;
-  /** Called when the component gains focus */
-  onFocus?: () => void;
-  /** Called when the component loses focus */
-  onBlur?: () => void;
-  /** Number of extra items to render above and below the viewport (default: 0) */
-  overscan?: number;
-  /** Controlled scroll offset. When provided, the component becomes controlled. */
-  offset?: number;
-  /** Called when the internal offset would change (for controlled mode) */
-  onOffsetChange?: (offset: number) => void;
-  /**
-   * Enable measurement of children's actual heights for accurate scrolling
-   * with multi-line children. When true, all children are rendered and measured
-   * (O(n) rendering). When false, children are assumed to be 1 line each
-   * (O(viewport) rendering). Default: false.
+	initialOffset?: number;
+	/**
+  Lines per arrow key press (default: 1)
+  */
+	scrollStep?: number;
+	/**
+  Draw rounded border around viewport (default: false)
+  */
+	border?: boolean;
+	/**
+  Show proportional scrollbar (default: true)
+  */
+	showScrollbar?: boolean;
+	/**
+  Show overflow indicators (default: true)
+  */
+	showIndicators?: boolean;
+	/**
+  Participate in Tab focus cycle (default: true)
+  */
+	focusable?: boolean;
+	/**
+  Auto-focus this component on mount (default: false)
+  */
+	autoFocus?: boolean;
+	/**
+  Focus ID for programmatic focus
+  */
+	id?: string;
+	/**
+  Scroll event callback
+  */
+	onScroll?: (state: ScrollState) => void;
+	/**
+  Scrollbar visual style. Default: 'block'.
+  */
+	scrollbarStyle?: 'block' | 'line' | 'thick' | 'dots';
+	/**
+  Scrollbar thumb character (default: █)
+  */
+	scrollbarCharacter?: string;
+	/**
+  Scrollbar track character (default: ░)
+  */
+	trackCharacter?: string;
+	/**
+  Up overflow indicator (default: ▲)
+  */
+	upIndicator?: string;
+	/**
+  Down overflow indicator (default: ▼)
+  */
+	downIndicator?: string;
+	/**
+  Scrollbar thumb color when focused
+  */
+	scrollbarColor?: string;
+	/**
+  Scrollbar thumb color when unfocused
+  */
+	scrollbarDimColor?: string;
+	/**
+  Track color
+  */
+	trackColor?: string;
+	/**
+  Border color when focused
+  */
+	borderColor?: string;
+	/**
+  Border color when unfocused (default: gray)
+  */
+	borderDimColor?: string;
+	/**
+  Enable vim-style keybindings (j/k/g/G/u/d). Default: true
+  */
+	enableVimBindings?: boolean;
+	/**
+  Called when the component gains focus
+  */
+	onFocus?: () => void;
+	/**
+  Called when the component loses focus
+  */
+	onBlur?: () => void;
+	/**
+  Number of extra items to render above and below the viewport (default: 0)
+  */
+	overscan?: number;
+	/**
+  Controlled scroll offset. When provided, the component becomes controlled.
+  */
+	offset?: number;
+	/**
+  Called when the internal offset would change (for controlled mode)
+  */
+	onOffsetChange?: (offset: number) => void;
+	/**
+   Enable measurement of children's actual heights for accurate scrolling
+   with multi-line children. When true, all children are rendered and measured
+   (O(n) rendering). When false, children are assumed to be 1 line each
+   (O(viewport) rendering). Default: false.
    */
-  measureChildren?: boolean;
-  /** Position of the scrollbar. 'inside' renders alongside content within the border, 'outside' renders to the right of the border. Default: 'inside'. */
-  scrollbarPosition?: 'inside' | 'outside';
-  /** Disable overflow clipping for layout debugging (default: false) */
-  debug?: boolean;
-  /** Called when total content height changes */
-  onContentHeightChange?: (height: number, previousHeight: number) => void;
-  /** Called when viewport height changes */
-  onViewportSizeChange?: (height: number, previousHeight: number) => void;
-  /** Called when a measured child's height changes (requires measureChildren) */
-  onItemHeightChange?: (index: number, height: number, previousHeight: number) => void;
-  /**
-   * Called when the scroll position enters within `reachThreshold` lines of the
-   * bottom. Useful for loading more content. Edge-triggered: it fires once per
-   * entry into the zone and re-arms only after the offset leaves it, so it will
-   * not fire on mount and will not re-fire while the offset stays pinned to the
-   * bottom (e.g. under `followOutput` during a continuous append stream).
+	measureChildren?: boolean;
+	/**
+  Position of the scrollbar. 'inside' renders alongside content within the border, 'outside' renders to the right of the border. Default: 'inside'.
+  */
+	scrollbarPosition?: 'inside' | 'outside';
+	/**
+  Disable overflow clipping for layout debugging (default: false)
+  */
+	debug?: boolean;
+	/**
+  Called when total content height changes
+  */
+	onContentHeightChange?: (height: number, previousHeight: number) => void;
+	/**
+  Called when viewport height changes
+  */
+	onViewportSizeChange?: (height: number, previousHeight: number) => void;
+	/**
+  Called when a measured child's height changes (requires measureChildren)
+  */
+	onItemHeightChange?: (index: number, height: number, previousHeight: number) => void;
+	/**
+   Called when the scroll position enters within `reachThreshold` lines of the
+   bottom. Useful for loading more content. Edge-triggered: it fires once per
+   entry into the zone and re-arms only after the offset leaves it, so it will
+   not fire on mount and will not re-fire while the offset stays pinned to the
+   bottom (e.g. under `followOutput` during a continuous append stream).
    */
-  onReachEnd?: () => void;
-  /**
-   * Called when the scroll position enters within `reachThreshold` lines of the
-   * top. Useful for loading earlier content. Edge-triggered: fires once per
-   * entry into the zone and re-arms only after the offset leaves it (does not
-   * fire on mount).
+	onReachEnd?: () => void;
+	/**
+   Called when the scroll position enters within `reachThreshold` lines of the
+   top. Useful for loading earlier content. Edge-triggered: fires once per
+   entry into the zone and re-arms only after the offset leaves it (does not
+   fire on mount).
    */
-  onReachStart?: () => void;
-  /** Number of lines from the edge to trigger onReachEnd/onReachStart (default: 5) */
-  reachThreshold?: number;
-  /** Accessible label for the scrollable region (default: "Scrollable content") */
-  ariaLabel?: string;
+	onReachStart?: () => void;
+	/**
+  Number of lines from the edge to trigger onReachEnd/onReachStart (default: 5)
+  */
+	reachThreshold?: number;
+	/**
+  Accessible label for the scrollable region (default: "Scrollable content")
+  */
+	ariaLabel?: string;
 };

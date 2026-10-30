@@ -2,29 +2,10 @@
   "name": "ink-scrollable-box",
   "version": "1.1.4",
   "description": "Scrollable container component for Ink with keyboard navigation, vim bindings, and auto-follow",
-  "keywords": [
-    "ink",
-    "react",
-    "cli",
-    "terminal",
-    "scroll",
-    "scrollable",
-    "scrollbar",
-    "viewport",
-    "tui",
-    "vim",
-    "keyboard"
-  ],
-  "author": "John Costa",
   "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/costajohnt/ink-scrollable-box"
-  },
+  "repository": "github:costajohnt/ink-scrollable-box",
+  "author": "John Costa",
   "type": "module",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
       "import": {
@@ -37,9 +18,9 @@
       }
     }
   },
-  "files": [
-    "dist"
-  ],
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "engines": {
     "node": ">=20"
   },
@@ -53,10 +34,22 @@
     "typecheck": "tsc --noEmit",
     "prepublishOnly": "npm run build"
   },
-  "peerDependencies": {
-    "ink": ">=6.0.0",
-    "react": ">=19.0.0"
-  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "ink",
+    "react",
+    "cli",
+    "terminal",
+    "scroll",
+    "scrollable",
+    "scrollbar",
+    "viewport",
+    "tui",
+    "vim",
+    "keyboard"
+  ],
   "devDependencies": {
     "@costajohnt/ink-config": "github:costajohnt/ink-config",
     "@types/react": "^19.2.14",
@@ -68,5 +61,9 @@
     "typescript": "^5.9.3",
     "vitest": "^4.1.2",
     "xo": "^5.0.1"
+  },
+  "peerDependencies": {
+    "ink": ">=6.0.0",
+    "react": ">=19.0.0"
   }
 }

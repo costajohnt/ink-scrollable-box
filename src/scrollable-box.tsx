@@ -414,11 +414,13 @@ function ScrollableBoxRender(
 		// per-index (not `total > 0`) lets a genuine collapse to 0 update
 		// contentHeight instead of leaving it stale (which would show phantom
 		// overflow), while still ignoring the not-yet-measured initial state.
-		if (measureChildren && allChildrenMeasured(heightsRef.current, childrenArray.length)) {
-			const total = heightsRef.current.reduce((sum, h) => sum + h, 0);
-			if (total !== measuredHeight) {
-				setMeasuredHeight(total);
-			}
+		if (!(measureChildren && allChildrenMeasured(heightsRef.current, childrenArray.length))) {
+			return;
+		}
+
+		const total = heightsRef.current.reduce((sum, h) => sum + h, 0);
+		if (total !== measuredHeight) {
+			setMeasuredHeight(total);
 		}
 	}, [measureChildren, childrenArray.length, measuredHeight, measurementVersion]);
 
@@ -487,12 +489,12 @@ function ScrollableBoxRender(
 	const isScreenReaderEnabled = useIsScreenReaderEnabled();
 
 	const hasOverflow = contentHeight > effectiveHeight;
-	const showBar = showScrollbar && hasOverflow;
+	const isShowBar = showScrollbar && hasOverflow;
 	const isOutside = scrollbarPosition === 'outside';
 	const activeBorderColor = isFocused ? (borderColor ?? 'blue') : borderDimColor;
 	const containerLabel = ariaLabel ?? (followOutput ? 'Scrollable log' : 'Scrollable content');
 
-	const scrollbarElement = showBar
+	const scrollbarElement = isShowBar
 		? (
 			<Scrollbar
 				contentHeight={contentHeight}
@@ -575,7 +577,7 @@ function ScrollableBoxRender(
 	return (
 		<Box flexDirection='row' width={width}>
 			{contentBox}
-			{showBar
+			{isShowBar
 				? (
 					<Box flexDirection='column' paddingTop={borderPadding} paddingBottom={borderPadding}>
 						{scrollbarElement}

@@ -5,7 +5,7 @@ import {Box} from 'ink';
 import {ScrollableBox} from '../src/scrollable-box.js';
 import {makeLines, write, focus} from './helpers.js';
 
-const arrowDown = '\u001B[B';
+const arrowDown = '\u{1B}[B';
 const tab = '\t';
 
 describe('integration', () => {
