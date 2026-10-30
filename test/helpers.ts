@@ -46,6 +46,5 @@ export function stripAnsi(input: string): string {
 }
 
 export function getState(instance: ReturnType<typeof render>): Record<string, unknown> {
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- JSON.parse returns any
 	return JSON.parse(instance.lastFrame()!.trim()) as Record<string, unknown>;
 }

@@ -8,7 +8,6 @@ import {MeasurableItem} from '../src/measurable-item.js';
 import {tick} from './helpers.js';
 
 vi.mock('ink', async importOriginal => {
-	// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- vi.mock factory requires cast
 	const original = await importOriginal() as Record<string, unknown>;
 	return {
 		...original,

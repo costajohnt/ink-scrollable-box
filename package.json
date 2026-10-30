@@ -46,9 +46,8 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage",
     "lint": "xo",
     "lint:fix": "xo --fix",
     "typecheck": "tsc --noEmit",
@@ -59,16 +58,15 @@
     "react": ">=19.0.0"
   },
   "devDependencies": {
+    "@costajohnt/ink-config": "github:costajohnt/ink-config",
     "@types/react": "^19.2.14",
     "@vitest/coverage-v8": "^4.1.2",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^7.0.1",
     "ink": "^6.8.0",
     "ink-testing-library": "^4.0.0",
     "react": "^19.2.4",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
     "vitest": "^4.1.2",
-    "xo": "^2.0.2"
+    "xo": "^5.0.1"
   }
 }
