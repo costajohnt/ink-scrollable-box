@@ -31,12 +31,12 @@ export function useScrollableInput({
 
 			// Ctrl+U / Ctrl+D — always active (before vim checks so ctrl
 			// variants don't fall through to plain u/d)
-			if (key.ctrl && input === 'u') {
+			if (input === 'u' && key.ctrl) {
 				s.halfPageUp();
 				return;
 			}
 
-			if (key.ctrl && input === 'd') {
+			if (input === 'd' && key.ctrl) {
 				s.halfPageDown();
 				return;
 			}

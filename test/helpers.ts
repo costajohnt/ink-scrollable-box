@@ -35,8 +35,8 @@ export function makeLines(n: number, prefix = 'Line'): string[] {
 }
 
 // SGR (color/style) escape sequences, e.g. ESC[2m ... ESC[22m.
-// eslint-disable-next-line no-control-regex
-const ansiPattern = /\u001B\[[\d;]*m/g;
+// eslint-disable-next-line no-control-regex, regexp/no-control-character -- SGR sequences start with the ESC control character
+const ansiPattern = /\u{1B}\[[\d;]*m/gu;
 
 /**
  Strip ANSI color/style escape codes so assertions are independent of
