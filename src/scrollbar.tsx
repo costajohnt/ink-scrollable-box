@@ -44,21 +44,21 @@ function renderHalfLineScrollbar(options: RenderOptions): ReactNode[] {
 		const cellTop = i * 2;
 		const cellBottom = (i * 2) + 1;
 
-		const topInThumb = cellTop >= halfThumbOffset && cellTop < halfThumbOffset + halfThumbHeight;
-		const bottomInThumb = cellBottom >= halfThumbOffset && cellBottom < halfThumbOffset + halfThumbHeight;
+		const isTopInThumb = cellTop >= halfThumbOffset && cellTop < halfThumbOffset + halfThumbHeight;
+		const isBottomInThumb = cellBottom >= halfThumbOffset && cellBottom < halfThumbOffset + halfThumbHeight;
 
 		let character: string;
-		if (topInThumb && bottomInThumb) {
+		if (isTopInThumb && isBottomInThumb) {
 			character = thumb;
-		} else if (topInThumb) {
+		} else if (isTopInThumb) {
 			character = '▀';
-		} else if (bottomInThumb) {
+		} else if (isBottomInThumb) {
 			character = '▄';
 		} else {
 			character = track;
 		}
 
-		const isThumbCell = topInThumb || bottomInThumb;
+		const isThumbCell = isTopInThumb || isBottomInThumb;
 		const color = resolveColor(isThumbCell, options);
 		lines.push(<Text key={i} color={color}>{character}</Text>);
 	}
@@ -122,16 +122,16 @@ export function Scrollbar({
 	};
 
 	// Use half-line precision only for block style without custom thumbCharacter
-	const useHalfLine = (scrollbarStyle ?? 'block') === 'block' && thumbCharacter === undefined;
+	const isUseHalfLine = (scrollbarStyle ?? 'block') === 'block' && thumbCharacter === undefined;
 
-	const lines = useHalfLine
+	const lines = isUseHalfLine
 		? renderHalfLineScrollbar(renderOptions)
 		: renderIntegerScrollbar(renderOptions);
 
-	const needsGap = (scrollbarStyle ?? 'block') !== 'block';
+	const isNeedsGap = (scrollbarStyle ?? 'block') !== 'block';
 
 	return (
-		<Box flexDirection='column' flexShrink={0} width={1} marginLeft={needsGap ? 1 : 0} aria-hidden>
+		<Box flexDirection='column' flexShrink={0} width={1} marginLeft={isNeedsGap ? 1 : 0} aria-hidden>
 			{lines}
 		</Box>
 	);

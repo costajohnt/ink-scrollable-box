@@ -1,14 +1,20 @@
 import {useState, useCallback, useMemo} from 'react';
 
 export type LinkedScrollResult = {
-	/** Shared offset value */
+	/**
+	Shared offset value
+	*/
 	offset: number;
-	/** Handler — spread onto each ScrollableBox as onOffsetChange */
+	/**
+	Handler — spread onto each ScrollableBox as onOffsetChange
+	*/
 	onOffsetChange: (offset: number) => void;
 };
 
 export type UseLinkedScrollOptions = {
-	/** Initial offset (default: 0) */
+	/**
+	Initial offset (default: 0)
+	*/
 	initialOffset?: number;
 };
 

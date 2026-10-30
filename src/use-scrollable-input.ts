@@ -73,35 +73,37 @@ export function useScrollableInput({
 			}
 
 			// Vim-style bindings — only when enabled
-			if (enableVimBindings) {
-				if (input === 'j') {
-					s.scrollDown();
-					return;
-				}
+			if (!enableVimBindings) {
+				return;
+			}
 
-				if (input === 'k') {
-					s.scrollUp();
-					return;
-				}
+			if (input === 'j') {
+				s.scrollDown();
+				return;
+			}
 
-				if (input === 'g') {
-					s.scrollToTop();
-					return;
-				}
+			if (input === 'k') {
+				s.scrollUp();
+				return;
+			}
 
-				if (input === 'G') {
-					s.scrollToBottom();
-					return;
-				}
+			if (input === 'g') {
+				s.scrollToTop();
+				return;
+			}
 
-				if (input === 'u') {
-					s.pageUp();
-					return;
-				}
+			if (input === 'G') {
+				s.scrollToBottom();
+				return;
+			}
 
-				if (input === 'd') {
-					s.pageDown();
-				}
+			if (input === 'u') {
+				s.pageUp();
+				return;
+			}
+
+			if (input === 'd') {
+				s.pageDown();
 			}
 		},
 		{isActive: isFocused && focusable},

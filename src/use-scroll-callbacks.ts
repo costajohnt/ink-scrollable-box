@@ -88,10 +88,12 @@ export function useScrollCallbacks({
 	const previousContentHeightRef = useRef(scroll.contentHeight);
 	useEffect(() => {
 		const previous = previousContentHeightRef.current;
-		if (scroll.contentHeight !== previous) {
-			previousContentHeightRef.current = scroll.contentHeight;
-			onContentHeightChangeRef.current?.(scroll.contentHeight, previous);
+		if (scroll.contentHeight === previous) {
+			return;
 		}
+
+		previousContentHeightRef.current = scroll.contentHeight;
+		onContentHeightChangeRef.current?.(scroll.contentHeight, previous);
 	}, [scroll.contentHeight]);
 
 	const onViewportSizeChangeRef = useRef(onViewportSizeChange);
@@ -102,10 +104,12 @@ export function useScrollCallbacks({
 	const previousViewportHeightRef = useRef(scroll.viewportHeight);
 	useEffect(() => {
 		const previous = previousViewportHeightRef.current;
-		if (scroll.viewportHeight !== previous) {
-			previousViewportHeightRef.current = scroll.viewportHeight;
-			onViewportSizeChangeRef.current?.(scroll.viewportHeight, previous);
+		if (scroll.viewportHeight === previous) {
+			return;
 		}
+
+		previousViewportHeightRef.current = scroll.viewportHeight;
+		onViewportSizeChangeRef.current?.(scroll.viewportHeight, previous);
 	}, [scroll.viewportHeight]);
 
 	const onReachEndRef = useRef(onReachEnd);
@@ -139,12 +143,12 @@ export function useScrollCallbacks({
 	const inReachEndZoneRef = useRef<boolean | undefined>(undefined);
 	const previousEndMaxOffsetRef = useRef(maxOffset);
 	useEffect(() => {
-		const inZone = maxOffset > 0 && scroll.offset >= maxOffset - threshold;
+		const isInZone = maxOffset > 0 && scroll.offset >= maxOffset - threshold;
 		const wasInZone = inReachEndZoneRef.current;
-		const overflowAppeared = previousEndMaxOffsetRef.current === 0 && maxOffset > 0;
+		const isOverflowAppeared = previousEndMaxOffsetRef.current === 0 && maxOffset > 0;
 		previousEndMaxOffsetRef.current = maxOffset;
-		inReachEndZoneRef.current = inZone;
-		if (wasInZone !== undefined && !overflowAppeared && inZone && !wasInZone) {
+		inReachEndZoneRef.current = isInZone;
+		if (wasInZone !== undefined && !isOverflowAppeared && isInZone && !wasInZone) {
 			onReachEndRef.current?.();
 		}
 	}, [scroll.offset, maxOffset, threshold]);
@@ -152,12 +156,12 @@ export function useScrollCallbacks({
 	const inReachStartZoneRef = useRef<boolean | undefined>(undefined);
 	const previousStartMaxOffsetRef = useRef(maxOffset);
 	useEffect(() => {
-		const inZone = maxOffset > 0 && scroll.offset <= threshold;
+		const isInZone = maxOffset > 0 && scroll.offset <= threshold;
 		const wasInZone = inReachStartZoneRef.current;
-		const overflowAppeared = previousStartMaxOffsetRef.current === 0 && maxOffset > 0;
+		const isOverflowAppeared = previousStartMaxOffsetRef.current === 0 && maxOffset > 0;
 		previousStartMaxOffsetRef.current = maxOffset;
-		inReachStartZoneRef.current = inZone;
-		if (wasInZone !== undefined && !overflowAppeared && inZone && !wasInZone) {
+		inReachStartZoneRef.current = isInZone;
+		if (wasInZone !== undefined && !isOverflowAppeared && isInZone && !wasInZone) {
 			onReachStartRef.current?.();
 		}
 	}, [scroll.offset, threshold, maxOffset]);

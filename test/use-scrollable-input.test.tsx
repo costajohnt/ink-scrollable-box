@@ -43,7 +43,7 @@ describe('useScrollableInput', () => {
 			<ScrollableWithInput contentHeight={20} viewportHeight={5} />,
 		);
 		await focus(instance.stdin);
-		await write(instance.stdin, '\x1B[B');
+		await write(instance.stdin, '\u{1B}[B');
 		expect(getState(instance).offset).toBe(1);
 		instance.unmount();
 	});
@@ -53,9 +53,9 @@ describe('useScrollableInput', () => {
 			<ScrollableWithInput contentHeight={20} viewportHeight={5} />,
 		);
 		await focus(instance.stdin);
-		await write(instance.stdin, '\x1B[B');
-		await write(instance.stdin, '\x1B[B');
-		await write(instance.stdin, '\x1B[A');
+		await write(instance.stdin, '\u{1B}[B');
+		await write(instance.stdin, '\u{1B}[B');
+		await write(instance.stdin, '\u{1B}[A');
 		expect(getState(instance).offset).toBe(1);
 		instance.unmount();
 	});
@@ -139,7 +139,7 @@ describe('useScrollableInput', () => {
 		);
 		await focus(instance.stdin);
 		await write(instance.stdin, 'G');
-		await write(instance.stdin, '\x1B[5~');
+		await write(instance.stdin, '\u{1B}[5~');
 		const state = getState(instance);
 		// maxOffset = 15; pageUp from 15 => 15 - 5 = 10
 		expect(state.offset).toBe(10);
@@ -152,7 +152,7 @@ describe('useScrollableInput', () => {
 			<ScrollableWithInput contentHeight={20} viewportHeight={5} />,
 		);
 		await focus(instance.stdin);
-		await write(instance.stdin, '\x1B[6~');
+		await write(instance.stdin, '\u{1B}[6~');
 		const state = getState(instance);
 		expect(state.offset).toBe(5);
 		instance.unmount();
@@ -164,7 +164,7 @@ describe('useScrollableInput', () => {
 		);
 		await focus(instance.stdin);
 		await write(instance.stdin, 'G');
-		await write(instance.stdin, '\x1B[H');
+		await write(instance.stdin, '\u{1B}[H');
 		const state = getState(instance);
 		expect(state.offset).toBe(0);
 		expect(state.isAtTop).toBe(true);
@@ -176,7 +176,7 @@ describe('useScrollableInput', () => {
 			<ScrollableWithInput contentHeight={20} viewportHeight={5} />,
 		);
 		await focus(instance.stdin);
-		await write(instance.stdin, '\x1B[F');
+		await write(instance.stdin, '\u{1B}[F');
 		const state = getState(instance);
 		expect(state.isAtBottom).toBe(true);
 		instance.unmount();
@@ -192,7 +192,7 @@ describe('useScrollableInput', () => {
 		);
 		// No tab focus needed — focusable=false means no focus participation
 		await write(instance.stdin, 'j');
-		await write(instance.stdin, '\x1B[B');
+		await write(instance.stdin, '\u{1B}[B');
 		await write(instance.stdin, 'd');
 		const state = getState(instance);
 		expect(state.offset).toBe(0);
@@ -220,7 +220,7 @@ describe('useScrollableInput', () => {
 		);
 		await focus(instance.stdin);
 		// Ctrl+D is \x04
-		await write(instance.stdin, '\x04');
+		await write(instance.stdin, '\u{4}');
 		// Math.floor(10 / 2) = 5
 		expect(getState(instance).offset).toBe(5);
 		instance.unmount();
@@ -233,7 +233,7 @@ describe('useScrollableInput', () => {
 		await focus(instance.stdin);
 		await write(instance.stdin, 'G'); // Go to bottom (offset 10)
 		// Ctrl+U is \x15
-		await write(instance.stdin, '\x15');
+		await write(instance.stdin, '\u{15}');
 		// 10 - Math.floor(10 / 2) = 5
 		expect(getState(instance).offset).toBe(5);
 		instance.unmount();
@@ -265,9 +265,9 @@ describe('useScrollableInput', () => {
 				<ScrollableWithInput contentHeight={20} viewportHeight={5} enableVimBindings={false} />,
 			);
 			await focus(instance.stdin);
-			await write(instance.stdin, '\x1B[B'); // Arrow down
+			await write(instance.stdin, '\u{1B}[B'); // Arrow down
 			expect(getState(instance).offset).toBe(1);
-			await write(instance.stdin, '\x1B[A'); // Arrow up
+			await write(instance.stdin, '\u{1B}[A'); // Arrow up
 			expect(getState(instance).offset).toBe(0);
 			instance.unmount();
 		});
@@ -277,9 +277,9 @@ describe('useScrollableInput', () => {
 				<ScrollableWithInput contentHeight={20} viewportHeight={10} enableVimBindings={false} />,
 			);
 			await focus(instance.stdin);
-			await write(instance.stdin, '\x04'); // Ctrl+D
+			await write(instance.stdin, '\u{4}'); // Ctrl+D
 			expect(getState(instance).offset).toBe(5);
-			await write(instance.stdin, '\x15'); // Ctrl+U
+			await write(instance.stdin, '\u{15}'); // Ctrl+U
 			expect(getState(instance).offset).toBe(0);
 			instance.unmount();
 		});
@@ -289,9 +289,9 @@ describe('useScrollableInput', () => {
 				<ScrollableWithInput contentHeight={20} viewportHeight={5} enableVimBindings={false} />,
 			);
 			await focus(instance.stdin);
-			await write(instance.stdin, '\x1B[6~'); // Page Down
+			await write(instance.stdin, '\u{1B}[6~'); // Page Down
 			expect(getState(instance).offset).toBe(5);
-			await write(instance.stdin, '\x1B[5~'); // Page Up
+			await write(instance.stdin, '\u{1B}[5~'); // Page Up
 			expect(getState(instance).offset).toBe(0);
 			instance.unmount();
 		});
@@ -301,9 +301,9 @@ describe('useScrollableInput', () => {
 				<ScrollableWithInput contentHeight={20} viewportHeight={5} enableVimBindings={false} />,
 			);
 			await focus(instance.stdin);
-			await write(instance.stdin, '\x1B[F'); // End
+			await write(instance.stdin, '\u{1B}[F'); // End
 			expect(getState(instance).isAtBottom).toBe(true);
-			await write(instance.stdin, '\x1B[H'); // Home
+			await write(instance.stdin, '\u{1B}[H'); // Home
 			expect(getState(instance).isAtTop).toBe(true);
 			instance.unmount();
 		});

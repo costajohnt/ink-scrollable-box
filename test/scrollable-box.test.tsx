@@ -1,19 +1,28 @@
 /* eslint-disable max-lines */
 import React, {useRef, useEffect, useState} from 'react';
 import {
-	describe, it, expect, vi,
+	describe,
+	it,
+	expect,
+	vi,
 } from 'vitest';
 import {render} from 'ink-testing-library';
 import {Text} from 'ink';
 import {ScrollableBox, computeMeasuredScrollTarget} from '../src/scrollable-box.js';
 import type {ScrollableBoxRef} from '../src/types.js';
 import {
-	tick, write, focus, makeLines, stripAnsi,
+	tick,
+	write,
+	focus,
+	makeLines,
+	stripAnsi,
 } from './helpers.js';
 
-const arrowDown = '\u001B[B';
+const arrowDown = '\u{1B}[B';
 
-/** Helper component that exposes the ref and runs an action via useEffect. */
+/**
+Helper component that exposes the ref and runs an action via useEffect.
+*/
 function RefTest({lines, action}: {lines: string[]; action: (ref: ScrollableBoxRef) => void}) {
 	const ref = useRef<ScrollableBoxRef>(null);
 	useEffect(() => {
@@ -1587,7 +1596,7 @@ describe('ScrollableBox — onReachEnd / onReachStart', () => {
 		for (let i = 0; i < 5; i++) {
 			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
 			await React.act(async () => {
-				instance.stdin.write('\u001B[A'); // arrow up
+				instance.stdin.write('\u{1B}[A'); // arrow up
 			});
 		}
 
@@ -1643,7 +1652,7 @@ describe('ScrollableBox — onReachEnd / onReachStart', () => {
 		for (let i = 0; i < 5; i++) {
 			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
 			await React.act(async () => {
-				instance.stdin.write('\u001B[A'); // arrow up
+				instance.stdin.write('\u{1B}[A'); // arrow up
 			});
 		}
 
@@ -1750,7 +1759,7 @@ describe('ScrollableBox — onReachEnd / onReachStart', () => {
 		for (let i = 0; i < 15; i++) {
 			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
 			await React.act(async () => {
-				instance.stdin.write('\u001B[A'); // arrow up
+				instance.stdin.write('\u{1B}[A'); // arrow up
 			});
 		}
 
@@ -1767,7 +1776,7 @@ describe('ScrollableBox — onReachEnd / onReachStart', () => {
 		for (let i = 0; i < 6; i++) {
 			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
 			await React.act(async () => {
-				instance.stdin.write('\u001B[A'); // arrow up
+				instance.stdin.write('\u{1B}[A'); // arrow up
 			});
 		}
 
@@ -1807,7 +1816,7 @@ describe('ScrollableBox — onReachEnd / onReachStart', () => {
 		for (let i = 0; i < 5; i++) {
 			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
 			await React.act(async () => {
-				instance.stdin.write('\u001B[A'); // arrow up
+				instance.stdin.write('\u{1B}[A'); // arrow up
 			});
 		}
 
@@ -1861,7 +1870,7 @@ describe('ScrollableBox — onReachEnd / onReachStart', () => {
 		for (let i = 0; i < 8; i++) {
 			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
 			await React.act(async () => {
-				instance.stdin.write('\u001B[A'); // arrow up
+				instance.stdin.write('\u{1B}[A'); // arrow up
 			});
 		}
 
@@ -1917,7 +1926,7 @@ describe('ScrollableBox — onReachEnd / onReachStart', () => {
 		for (let i = 0; i < 8; i++) {
 			// eslint-disable-next-line no-await-in-loop, @typescript-eslint/no-loop-func
 			await React.act(async () => {
-				instance.stdin.write('\u001B[A'); // arrow up
+				instance.stdin.write('\u{1B}[A'); // arrow up
 			});
 		}
 
@@ -2188,18 +2197,18 @@ describe('ScrollableBox — prop validation: overscan and reachThreshold', () =>
 
 	it('throws for non-finite initialOffset', () => {
 		expect(() => {
-			renderFn({height: 5, lines: [], initialOffset: Number.POSITIVE_INFINITY}, null);
+			renderFn({height: 5, lines: [], initialOffset: Infinity}, null);
 		}).toThrow('`initialOffset` must be a non-negative finite number');
 	});
 });
 
 describe('ScrollableBox — scrollToIndex with measureChildren', () => {
 	/**
-	 * In ink-testing-library, Yoga layout inside a clipped box causes alternating
-	 * heights (1 and 0) for MeasurableItem children. That limits actual scrolling,
-	 * but the code paths in scrollToIndex are still fully exercised. Tests here
-	 * assert that the calls complete without errors and use the measureChildren
-	 * branch.
+	 In ink-testing-library, Yoga layout inside a clipped box causes alternating
+	 heights (1 and 0) for MeasurableItem children. That limits actual scrolling,
+	 but the code paths in scrollToIndex are still fully exercised. Tests here
+	 assert that the calls complete without errors and use the measureChildren
+	 branch.
 	 */
 	function MeasureRefTest({
 		itemCount,

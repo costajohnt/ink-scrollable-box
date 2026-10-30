@@ -1,6 +1,8 @@
 import base from '@costajohnt/ink-config/xo';
 
-/** @type {import('xo').FlatXoConfig} */
+/**
+@type {import('xo').FlatXoConfig}
+*/
 const xoConfig = [
 	...base,
 	{
@@ -12,14 +14,10 @@ const xoConfig = [
 			'@eslint-react/no-forward-ref': 'off',
 			'@eslint-react/no-unnecessary-use-prefix': 'off',
 			'@typescript-eslint/strict-boolean-expressions': 'off',
-			'jsdoc/require-asterisk-prefix': 'off',
 			'unicorn/consistent-boolean-name': 'off',
-			'unicorn/prefer-early-return': 'off',
-			'unicorn/prefer-export-from': 'off',
 			'unicorn/prefer-number-is-safe-integer': 'off',
 			'unicorn/prefer-simple-condition-first': 'off',
 			'unicorn/prefer-ternary': 'off',
-			'unicorn/single-line-block-comment-style': 'off',
 		},
 	},
 	{
@@ -30,9 +28,7 @@ const xoConfig = [
 			'regexp/no-control-character': 'off',
 			'unicorn/no-duplicate-loops': 'off',
 			'unicorn/no-return-array-push': 'off',
-			'unicorn/prefer-global-number-constants': 'off',
 			'unicorn/prefer-unicode-code-point-escapes': 'off',
-			'xo/import-specifier-newline': 'off',
 		},
 	},
 	{
@@ -44,10 +40,8 @@ const xoConfig = [
 	{
 		files: ['package.json'],
 		rules: {
-			'package-json/prefer-shorthand': 'off',
 			'package-json/prefer-side-effects-field': 'off',
 			'package-json/require-default-condition': 'off',
-			'package-json/sort-properties': 'off',
 		},
 	},
 ];

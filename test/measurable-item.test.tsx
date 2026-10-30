@@ -1,6 +1,9 @@
 import React from 'react';
 import {
-	describe, it, expect, vi,
+	describe,
+	it,
+	expect,
+	vi,
 } from 'vitest';
 import {render} from 'ink-testing-library';
 import {Text} from 'ink';
