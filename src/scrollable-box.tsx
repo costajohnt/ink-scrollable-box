@@ -372,7 +372,7 @@ export function ScrollableBox(props: ScrollableBoxProps) {
 
 	// Lines mode scrolls one entry per terminal row, so an entry containing a
 	// newline becomes several rows (each row is rendered truncated, never wrapped).
-	const rows = useMemo(() => lines?.flatMap(line => String(line).split(/\r?\n/)), [lines]);
+	const rows = useMemo(() => lines?.flatMap(line => line.split(/\r?\n/)), [lines]);
 
 	// Measurement state for variable-height children
 	const heightsRef = useRef<number[]>([]);

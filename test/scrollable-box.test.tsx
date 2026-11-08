@@ -344,25 +344,30 @@ describe('ScrollableBox — followOutput', () => {
 });
 
 describe('ScrollableBox — lines wider than the box or containing newlines', () => {
-	it('keeps the newest line visible under followOutput when a line is wider than the box', () => {
-		const lines = [...makeLines(9), 'x'.repeat(200), 'Line 11'];
-		const {lastFrame, unmount} = render(
-			<ScrollableBox height={5} width={20} lines={lines} followOutput showScrollbar={false} showIndicators={false}/>,
-		);
-		const frame = stripAnsi(lastFrame()!);
-		expect(frame).toContain('Line 11');
-		expect(frame.split('\n')).toHaveLength(5);
-		unmount();
+	// FollowOutput pins to the bottom when content grows, so start with a full
+	// viewport and append the rest.
+	async function renderFollowing(lines: string[]) {
+		const props = {
+			height: 5, width: 20, followOutput: true, showScrollbar: false, showIndicators: false,
+		};
+		const instance = render(<ScrollableBox {...props} lines={makeLines(5)}/>);
+		instance.rerender(<ScrollableBox {...props} lines={lines}/>);
+		await tick();
+		await tick();
+		const rows = stripAnsi(instance.lastFrame()!).split('\n').map(row => row.trim());
+		instance.unmount();
+		return rows;
+	}
+
+	it('keeps the newest line visible under followOutput when a line is wider than the box', async () => {
+		const rows = await renderFollowing([...makeLines(9), 'x'.repeat(200), 'Line 11']);
+		expect(rows).toHaveLength(5);
+		expect(rows.at(-1)).toBe('Line 11');
 	});
 
-	it('splits entries on newlines so each row is scrollable', () => {
-		const lines = [...makeLines(8), 'Line 9\nLine 10', 'Line 11'];
-		const {lastFrame, unmount} = render(
-			<ScrollableBox height={5} lines={lines} followOutput showScrollbar={false} showIndicators={false}/>,
-		);
-		const frame = stripAnsi(lastFrame()!);
-		expect(frame.split('\n').map(row => row.trim())).toEqual(['Line 7', 'Line 8', 'Line 9', 'Line 10', 'Line 11']);
-		unmount();
+	it('splits entries on newlines so each row is scrollable', async () => {
+		const rows = await renderFollowing([...makeLines(8), 'Line 9\nLine 10', 'Line 11']);
+		expect(rows).toEqual(['Line 7', 'Line 8', 'Line 9', 'Line 10', 'Line 11']);
 	});
 });
 
