@@ -1,6 +1,6 @@
 {
   "name": "ink-scrollable-box",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Scrollable container component for Ink with keyboard navigation, vim bindings, and auto-follow",
   "license": "MIT",
   "repository": "github:costajohnt/ink-scrollable-box",
