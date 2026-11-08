@@ -346,9 +346,9 @@ describe('ScrollableBox — followOutput', () => {
 describe('ScrollableBox — lines wider than the box or containing newlines', () => {
 	// FollowOutput pins to the bottom when content grows, so start with a full
 	// viewport and append the rest.
-	async function renderFollowing(lines: string[]) {
+	async function renderFollowing(lines: string[], onContentHeightChange?: (height: number) => void) {
 		const props = {
-			height: 5, width: 20, followOutput: true, showScrollbar: false, showIndicators: false,
+			height: 5, width: 20, followOutput: true, showScrollbar: false, showIndicators: false, onContentHeightChange,
 		};
 		const instance = render(<ScrollableBox {...props} lines={makeLines(5)}/>);
 		instance.rerender(<ScrollableBox {...props} lines={lines}/>);
@@ -366,8 +366,10 @@ describe('ScrollableBox — lines wider than the box or containing newlines', ()
 	});
 
 	it('splits entries on newlines so each row is scrollable', async () => {
-		const rows = await renderFollowing([...makeLines(8), 'Line 9\nLine 10', 'Line 11']);
+		const onContentHeightChange = vi.fn();
+		const rows = await renderFollowing([...makeLines(8), 'Line 9\nLine 10', 'Line 11'], onContentHeightChange);
 		expect(rows).toEqual(['Line 7', 'Line 8', 'Line 9', 'Line 10', 'Line 11']);
+		expect(onContentHeightChange).toHaveBeenLastCalledWith(11, 5);
 	});
 });
 
