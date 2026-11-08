@@ -448,7 +448,7 @@ The `block` style uses half-line precision rendering (▀/▄ characters) for sm
 
 ## How It Works
 
-**Lines mode** slices the content array to render only visible rows (`lines.slice(offset, offset + height)`). Render cost is O(viewport) regardless of content size -- 100,000 lines renders the same as 100.
+**Lines mode** slices the content array to render only visible rows (`lines.slice(offset, offset + height)`). Render cost is O(viewport) regardless of content size -- 100,000 lines renders the same as 100. Each entry is one terminal row: entries containing `\n` are split into separate rows, and rows wider than the box are truncated with `…` instead of wrapping, so scroll math always matches what is on screen.
 
 **Children mode** renders only the visible subset of React children. When `measureChildren` is enabled, all children are rendered and measured for accurate scroll math with multi-line content (O(n) rendering).
 

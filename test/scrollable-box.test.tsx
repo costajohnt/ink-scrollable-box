@@ -343,6 +343,29 @@ describe('ScrollableBox — followOutput', () => {
 	});
 });
 
+describe('ScrollableBox — lines wider than the box or containing newlines', () => {
+	it('keeps the newest line visible under followOutput when a line is wider than the box', () => {
+		const lines = [...makeLines(9), 'x'.repeat(200), 'Line 11'];
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={5} width={20} lines={lines} followOutput showScrollbar={false} showIndicators={false}/>,
+		);
+		const frame = stripAnsi(lastFrame()!);
+		expect(frame).toContain('Line 11');
+		expect(frame.split('\n')).toHaveLength(5);
+		unmount();
+	});
+
+	it('splits entries on newlines so each row is scrollable', () => {
+		const lines = [...makeLines(8), 'Line 9\nLine 10', 'Line 11'];
+		const {lastFrame, unmount} = render(
+			<ScrollableBox height={5} lines={lines} followOutput showScrollbar={false} showIndicators={false}/>,
+		);
+		const frame = stripAnsi(lastFrame()!);
+		expect(frame.split('\n').map(row => row.trim())).toEqual(['Line 7', 'Line 8', 'Line 9', 'Line 10', 'Line 11']);
+		unmount();
+	});
+});
+
 describe('ScrollableBox — ANSI codes in lines', () => {
 	it('renders lines with ANSI color codes correctly', () => {
 		// Ink's <Text> component handles ANSI passthrough
