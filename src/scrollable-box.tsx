@@ -370,10 +370,6 @@ export function ScrollableBox(props: ScrollableBoxProps) {
 	// eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @eslint-react/no-children-to-array -- see above
 	const childrenArray = useMemo(() => (children ? Children.toArray(children) : []), [children]);
 
-	// Lines mode scrolls one entry per terminal row, so an entry containing a
-	// newline becomes several rows (each row is rendered truncated, never wrapped).
-	const rows = useMemo(() => lines?.flatMap(line => line.split(/\r?\n/)), [lines]);
-
 	// Measurement state for variable-height children
 	const heightsRef = useRef<number[]>([]);
 	const [measuredHeight, setMeasuredHeight] = useState(childrenArray.length);
@@ -423,7 +419,7 @@ export function ScrollableBox(props: ScrollableBoxProps) {
 	}, []);
 
 	const childrenHeight = measureChildren ? measuredHeight : childrenArray.length;
-	const contentHeight = rows ? rows.length : childrenHeight;
+	const contentHeight = lines ? lines.length : childrenHeight;
 	const effectiveHeight = border ? Math.max(1, height - 2) : height;
 
 	const scroll = useScrollable({
@@ -436,7 +432,7 @@ export function ScrollableBox(props: ScrollableBoxProps) {
 		onOffsetChange,
 	});
 
-	const itemCount = rows ? rows.length : childrenArray.length;
+	const itemCount = lines ? lines.length : childrenArray.length;
 	useImperativeHandle(ref, () => buildRefHandle({
 		scroll,
 		effectiveHeight,
@@ -531,7 +527,7 @@ export function ScrollableBox(props: ScrollableBoxProps) {
 			>
 				<Box flexDirection='column' flexGrow={1}>
 					<ScrollContent
-						lines={rows}
+						lines={lines}
 						childrenArray={childrenArray}
 						measureChildren={measureChildren}
 						scrollOffset={scroll.offset}
