@@ -203,6 +203,8 @@ export type ScrollableBoxProps = {
 	width?: number;
 	/**
   String content — performance mode (mutually exclusive with children)
+  Each entry renders as exactly one terminal row: newlines inside an entry are
+  shown as spaces, and entries wider than the box are truncated.
   */
 	lines?: string[];
 	/**

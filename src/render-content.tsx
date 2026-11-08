@@ -13,6 +13,12 @@ type ScrollContentProps = {
 	onItemMeasure: (index: number, height: number) => void;
 };
 
+// Lines mode is one terminal row per entry, so a rendered entry must not
+// wrap or break: newlines show as spaces and wide rows are truncated.
+function toRow(line: string): string {
+	return line.replaceAll(/\r?\n/g, ' ');
+}
+
 export function ScrollContent({
 	lines,
 	childrenArray,
@@ -44,7 +50,7 @@ export function ScrollContent({
 		? lines
 			.slice(scrollOffset, scrollOffset + effectiveHeight)
 			.map((line, i) => (
-				<Text key={`line-${scrollOffset + i}`}>{line}</Text>
+				<Text wrap='truncate-end' key={`line-${scrollOffset + i}`}>{toRow(line)}</Text>
 			))
 		: childrenArray.slice(scrollOffset, scrollOffset + effectiveHeight);
 
@@ -59,7 +65,7 @@ export function ScrollContent({
 			<Box height={0} overflowY='hidden' flexDirection='column' aria-hidden>
 				{lines
 					? lines.slice(overscanAboveStart, scrollOffset).map((line, i) => (
-						<Text key={`os-above-${overscanAboveStart + i}`}>{line}</Text>
+						<Text wrap='truncate-end' key={`os-above-${overscanAboveStart + i}`}>{toRow(line)}</Text>
 					))
 					: childrenArray.slice(overscanAboveStart, scrollOffset)}
 			</Box>
@@ -71,7 +77,7 @@ export function ScrollContent({
 			<Box height={0} overflowY='hidden' flexDirection='column' aria-hidden>
 				{lines
 					? lines.slice(scrollOffset + effectiveHeight, overscanBelowEnd).map((line, i) => (
-						<Text key={`os-below-${scrollOffset + effectiveHeight + i}`}>{line}</Text>
+						<Text wrap='truncate-end' key={`os-below-${scrollOffset + effectiveHeight + i}`}>{toRow(line)}</Text>
 					))
 					: childrenArray.slice(scrollOffset + effectiveHeight, overscanBelowEnd)}
 			</Box>
