@@ -1,5 +1,13 @@
 # Changelog
 
+## [2.0.1](https://github.com/costajohnt/ink-scrollable-box/compare/v2.0.0...v2.0.1) (2026-11-08)
+
+
+### Bug Fixes
+
+* **deps:** require ink &gt;=6.6.0 ([#32](https://github.com/costajohnt/ink-scrollable-box/issues/32)) ([0a8a16f](https://github.com/costajohnt/ink-scrollable-box/commit/0a8a16fd6019500837e74d591e2d4bd89ae510c5))
+* render one row per entry in lines mode ([#33](https://github.com/costajohnt/ink-scrollable-box/issues/33)) ([615758a](https://github.com/costajohnt/ink-scrollable-box/commit/615758a09e3660539b8a94a8054c7af1e92be1c7))
+
 ## [2.0.0](https://github.com/costajohnt/ink-scrollable-box/compare/v1.1.4...v2.0.0) (2026-10-30)
 
 
